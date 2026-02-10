@@ -1,0 +1,92 @@
+{
+  "system_version": "3.0",
+  "mode": "hybrid",
+  "auto_execute": false,
+
+  "position_limits": {
+    "max_positions": 3,
+    "max_trades_per_stock_per_day": 2,
+    "max_daily_trades": 5,
+    "position_size": 20000,
+    "max_portfolio_risk": 0.15,
+    "min_capital_buffer": 5000,
+    "dynamic_position_sizing": true
+  },
+
+  "entry_rules": {
+    "minimum_score": 75,
+    "require_pullback": true,
+    "require_volume_confirmation": true,
+    "avoid_gap_chase": true,
+    "min_atr_percentage": 2.0,
+    "max_atr_percentage": 15.0
+  },
+
+  "exit_rules": {
+    "use_dynamic_stops": true,
+    "use_trailing_stops": true,
+    "risk_reward_minimum": 2.0,
+    "target_levels": [1, 2],
+    "partial_exit_at_target1": 0,
+    "breakeven_after_target1": false,
+    "max_hold_time_hours": 48,
+    "pattern_invalidation_exit": true,
+    "market_close_time": "15:15",
+    "force_exit_before_close": true,
+    "single_exit_preferred": true
+  },
+
+  "technical_criteria": {
+    "support_resistance_weight": 25,
+    "fair_value_gap_weight": 20,
+    "trend_alignment_weight": 20,
+    "candlestick_pattern_weight": 15,
+    "volume_profile_weight": 10,
+    "risk_reward_weight": 10
+  },
+
+  "risk_management": {
+    "max_loss_per_trade_percent": 2.0,
+    "max_daily_loss_percent": 5.0,
+    "consecutive_losses_pause": 2,
+    "scale_down_after_loss": true,
+    "scale_up_after_win": true,
+    "check_capital_before_entry": true,
+    "min_balance_to_trade": 5000,
+    "max_drawdown_daily": 1000
+  },
+
+  "scanning": {
+    "scan_interval_minutes": 5,
+    "markets": ["NSE", "BSE"],
+    "min_volume": 100000,
+    "min_price": 50,
+    "max_price": 5000,
+    "volatility_range": [2, 15]
+  },
+
+  "alerts": {
+    "send_desktop_notification": true,
+    "send_to_journal": true,
+    "alert_on_score_above": 75,
+    "alert_on_exit_signal": true,
+    "alert_on_stop_approach": true
+  },
+
+  "learning": {
+    "capture_all_signals": true,
+    "capture_missed_opportunities": true,
+    "daily_performance_analysis": true,
+    "pattern_success_tracking": true,
+    "adaptive_scoring": true
+  },
+
+  "cost_optimization": {
+    "min_profit_to_cover_charges": 10,
+    "charges_per_roundtrip": 7,
+    "dp_charge_per_sell": 15.34,
+    "avoid_multiple_exits": true,
+    "batch_exit_threshold": 0.5,
+    "track_costs_realtime": true
+  }
+}

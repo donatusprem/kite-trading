@@ -1,0 +1,47 @@
+[
+    {
+        "symbol": "NIFTY26FEB25500CE",
+        "timestamp": "2026-02-06 14:15:00",
+        "score": 85,
+        "ltp": 324.80,
+        "signals": [
+            "Long Position Active",
+            "Momentum Building"
+        ],
+        "pattern": "Bullish Continuation",
+        "trend": "Uptrend",
+        "stopLoss": 221.17,
+        "target1": 350.00,
+        "target2": 394.94
+    },
+    {
+        "symbol": "TATASTEEL",
+        "timestamp": "2026-02-06 14:10:00",
+        "score": 78,
+        "ltp": 145.20,
+        "signals": [
+            "Bullish Engulfing",
+            "Support Bounce"
+        ],
+        "pattern": "Bullish Engulfing",
+        "trend": "Uptrend",
+        "stopLoss": 142.50,
+        "target1": 150.00,
+        "target2": 155.00
+    },
+    {
+        "symbol": "INFY",
+        "timestamp": "2026-02-06 14:05:00",
+        "score": 82,
+        "ltp": 1650.00,
+        "signals": [
+            "Hammer",
+            "RSI Divergence"
+        ],
+        "pattern": "Hammer",
+        "trend": "Reversal",
+        "stopLoss": 1630.00,
+        "target1": 1680.00,
+        "target2": 1700.00
+    }
+]

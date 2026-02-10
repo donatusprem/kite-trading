@@ -1,0 +1,63 @@
+particulars,posting_date,cost_center,voucher_type,debit,credit,net_balance
+Opening Balance,,,,,,134.518724
+Funds added using UPI from VWQ574 with reference number 108863997107,2025-12-29,NSE-EQ - Z,Bank Receipts,0.000000,8000.000000,8134.518724
+Funds added using UPI from VWQ574 with reference number 108863795335,2025-12-29,NSE-EQ - Z,Bank Receipts,0.000000,10000.000000,18134.518724
+Net settlement for Equity with settlement number: 2025247,2025-12-29,NSE-EQ - Z,Book Voucher,17608.559655,0.000000,525.959069
+Charges for enabling DDPI,2025-12-29,NSE-EQ - Z,Journal Entry,118.000000,0.000000,407.959069
+DP Charges for Sale of MTNL on 30/12/2025,2025-12-30,NSE-EQ - Z,Journal Entry,15.340000,0.000000,392.619069
+Net settlement for Equity with settlement number: 2025248,2025-12-30,NSE-EQ - Z,Book Voucher,0.000000,850.956330,1243.575399
+DP Charges for Sale of TATASTEEL on 31/12/2025,2025-12-31,NSE-EQ - Z,Journal Entry,15.340000,0.000000,1228.235399
+Net settlement for Equity with settlement number: 2025249,2025-12-31,NSE-EQ - Z,Book Voucher,0.000000,2350.997486,3579.232885
+DP Charges for Sale of TATASTEEL on 01/01/2026,2026-01-01,NSE-EQ - Z,Journal Entry,15.340000,0.000000,3563.892885
+Net settlement for Equity with settlement number: 2026001,2026-01-01,NSE-EQ - Z,Book Voucher,0.000000,5272.790771,8836.683656
+DP Charges for Sale of COALINDIA on 02/01/2026,2026-01-02,NSE-EQ - Z,Journal Entry,15.340000,0.000000,8821.343656
+DP Charges for Sale of NTPC on 02/01/2026,2026-01-02,NSE-EQ - Z,Journal Entry,15.340000,0.000000,8806.003656
+DP Charges for Sale of RECLTD on 02/01/2026,2026-01-02,NSE-EQ - Z,Journal Entry,15.340000,0.000000,8790.663656
+Net settlement for Equity with settlement number: 2026002,2026-01-02,NSE-EQ - Z,Book Voucher,8705.040538,0.000000,85.623118
+Net settlement for Equity with settlement number: 2026003,2026-01-05,NSE-EQ - Z,Book Voucher,0.000000,8500.396356,8586.019474
+DP Charges for Sale of IOC on 05/01/2026,2026-01-05,NSE-EQ - Z,Journal Entry,15.340000,0.000000,8570.679474
+DP Charges for Sale of HINDALCO on 05/01/2026,2026-01-05,NSE-EQ - Z,Journal Entry,15.340000,0.000000,8555.339474
+DP Charges for Sale of BPCL on 05/01/2026,2026-01-05,NSE-EQ - Z,Journal Entry,15.340000,0.000000,8539.999474
+DP Charges for Sale of COALINDIA on 06/01/2026,2026-01-06,NSE-EQ - Z,Journal Entry,15.340000,0.000000,8524.659474
+DP Charges for Sale of NATIONALUM on 06/01/2026,2026-01-06,NSE-EQ - Z,Journal Entry,15.340000,0.000000,8509.319474
+Net settlement for Equity with settlement number: 2026004,2026-01-06,NSE-EQ - Z,Book Voucher,0.000000,592.714319,9102.033793
+Net settlement for Equity with settlement number: 2026005,2026-01-07,NSE-EQ - Z,Book Voucher,1290.802497,0.000000,7811.231296
+DP Charges for Sale of NTPC on 07/01/2026,2026-01-07,NSE-EQ - Z,Journal Entry,15.340000,0.000000,7795.891296
+DP Charges for Sale of TATAPOWER on 07/01/2026,2026-01-07,NSE-EQ - Z,Journal Entry,15.340000,0.000000,7780.551296
+DP Charges for Sale of BEL on 07/01/2026,2026-01-07,NSE-EQ - Z,Journal Entry,15.340000,0.000000,7765.211296
+DP Charges for Sale of HDFCBANK on 07/01/2026,2026-01-07,NSE-EQ - Z,Journal Entry,15.340000,0.000000,7749.871296
+Funds added using UPI from VWQ574 with reference number 582905900086,2026-01-08,NSE-EQ - Z,Bank Receipts,0.000000,9000.000000,16749.871296
+DP Charges for Sale of SUNPHARMA on 08/01/2026,2026-01-08,NSE-EQ - Z,Journal Entry,15.340000,0.000000,16734.531296
+Net settlement for Equity with settlement number: 2026006,2026-01-08,NSE-EQ - Z,Book Voucher,0.000000,10386.944347,27121.475643
+Net settlement for Equity with settlement number: 2026007,2026-01-09,NSE-EQ - Z,Book Voucher,0.000000,7842.405495,34963.881138
+DP Charges for Sale of ICICIBANK on 09/01/2026,2026-01-09,NSE-EQ - Z,Journal Entry,15.340000,0.000000,34948.541138
+DP Charges for Sale of COALINDIA on 09/01/2026,2026-01-09,NSE-EQ - Z,Journal Entry,15.340000,0.000000,34933.201138
+Net settlement for Equity with settlement number: 2026008,2026-01-12,NSE-EQ - Z,Book Voucher,33901.829173,0.000000,1031.371965
+DP Charges for Sale of VEDL on 14/01/2026,2026-01-14,NSE-EQ - Z,Journal Entry,15.340000,0.000000,1016.031965
+DP Charges for Sale of NATIONALUM on 14/01/2026,2026-01-14,NSE-EQ - Z,Journal Entry,15.340000,0.000000,1000.691965
+Being pledge charges for LIQUIDBEES,2026-01-14,NSE-EQ - Z,Journal Entry,35.400000,0.000000,965.291965
+Net settlement for Equity with settlement number: 2026010,2026-01-14,NSE-EQ - Z,Book Voucher,0.000000,14729.683258,15694.975223
+Net settlement for Equity with settlement number: 2026012,2026-01-16,NSE-EQ - Z,Book Voucher,21.779611,0.000000,15673.195612
+Instant Payout of 15000.0/- to AXIS BANK LTD 923010015566408 A/C number as per withdrawal request made on 2026-01-19 with reference number 202601196383859f31,2026-01-19,NSE-EQ - Z,Bank Payments,15000.000000,0.000000,673.195612
+Net settlement for Equity with settlement number: 2026013,2026-01-19,NSE-EQ - Z,Book Voucher,11.182796,0.000000,662.012816
+Call and Trade charges(Auto Square Off) for 2026-01-21,2026-01-21,NSE-EQ - Z,Journal Entry,59.000000,0.000000,603.012816
+Being pledge charges for 119788,2026-01-21,NSE-EQ - Z,Journal Entry,35.400000,0.000000,567.612816
+Net settlement for Equity with settlement number: 2026015,2026-01-21,NSE-EQ - Z,Book Voucher,893.763459,0.000000,-326.150643
+Call and Trade charges(Auto Square Off) for 2026-01-22,2026-01-22,NSE-EQ - Z,Journal Entry,118.000000,0.000000,-444.150643
+DP Charges for Sale of LIQUIDBEES on 22/01/2026,2026-01-22,NSE-EQ - Z,Journal Entry,11.210000,0.000000,-455.360643
+Net settlement for Equity with settlement number: 2026016,2026-01-22,NSE-EQ - Z,Book Voucher,0.000000,13326.369179,12871.008536
+Net settlement for Equity with settlement number: 2026017,2026-01-23,NSE-EQ - Z,Book Voucher,4340.147668,0.000000,8530.860868
+DP Charges for Sale of HINDALCO on 27/01/2026,2026-01-27,NSE-EQ - Z,Journal Entry,15.340000,0.000000,8515.520868
+Net settlement for Equity with settlement number: 2026018,2026-01-27,NSE-EQ - Z,Book Voucher,0.000000,4749.814501,13265.335369
+Net settlement for Equity with settlement number: 2026019,2026-01-28,NSE-EQ - Z,Book Voucher,0.000000,7796.631233,21061.966602
+DP Charges for Sale of NATIONALUM on 28/01/2026,2026-01-28,NSE-EQ - Z,Journal Entry,15.340000,0.000000,21046.626602
+Call and Trade charges(Auto Square Off) for 2026-01-29,2026-01-29,NSE-EQ - Z,Journal Entry,59.000000,0.000000,20987.626602
+Net settlement for Equity with settlement number: 2026020,2026-01-29,NSE-EQ - Z,Book Voucher,184.172752,0.000000,20803.453850
+Net settlement for Equity with settlement number: 2026021,2026-01-30,NSE-EQ - Z,Book Voucher,19898.775993,0.000000,904.677857
+Funds added using UPI from VWQ574 with reference number 102606438606,2026-02-02,NSE-EQ - Z,Bank Receipts,0.000000,1500.000000,2404.677857
+Net settlement for Equity with settlement number: 2026022,2026-02-02,NSE-EQ - Z,Book Voucher,1467.673685,0.000000,937.004172
+Net settlement for Equity with settlement number: 2026023,2026-02-03,NSE-EQ - Z,Book Voucher,594.748301,0.000000,342.255871
+Call and Trade charges(Auto Square Off) for 2026-02-04,2026-02-04,NSE-EQ - Z,Journal Entry,118.000000,0.000000,224.255871
+Funds added using UPI from VWQ574 with reference number 109124374436,2026-02-04,NSE-EQ - Z,Bank Receipts,0.000000,200.000000,424.255871
+Net settlement for Equity with settlement number: 2026024,2026-02-04,NSE-EQ - Z,Book Voucher,445.677556,0.000000,-21.421685
+Closing Balance,,,,,,-21.421685

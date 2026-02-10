@@ -1,0 +1,97 @@
+{
+  "mode": "MIS",
+  "description": "Intraday trading using margin from pledged GOLDBEES",
+
+  "scoring": {
+    "min_score_threshold": 85,
+    "preferred_score": 90,
+    "comment": "Stricter threshold for intraday - need higher conviction"
+  },
+
+  "position_sizing": {
+    "max_position_size": 15000,
+    "max_positions": 1,
+    "position_sizing_method": "risk_based",
+    "risk_per_trade_pct": 1.0,
+    "max_capital_per_position_pct": 90,
+    "comment": "Use ₹15k margin from pledged GOLDBEES, one position at a time"
+  },
+
+  "entry_rules": {
+    "product_type": "MIS",
+    "entry_window_start": "09:20",
+    "entry_window_end": "14:00",
+    "avoid_first_15_min": true,
+    "avoid_after_2pm": true,
+    "comment": "No new MIS entries after 2:00 PM - too close to market close"
+  },
+
+  "exit_rules": {
+    "stop_loss_pct": 0.5,
+    "target_pct": 1.0,
+    "risk_reward_ratio": 2.0,
+    "partial_exit_at_target1": 0,
+    "trailing_stop": false,
+    "breakeven_after_target1": false,
+    "force_exit_time": "15:15",
+    "force_exit_enabled": true,
+    "comment": "Full exit only, force close at 3:15 PM sharp (no exceptions!)"
+  },
+
+  "risk_management": {
+    "max_loss_per_trade": 75,
+    "max_daily_loss": 300,
+    "max_trades_per_day": 2,
+    "stop_trading_after_loss_streak": 2,
+    "check_capital_before_entry": true,
+    "min_margin_required": 15000,
+    "comment": "Conservative limits for intraday - this is where losses occurred before"
+  },
+
+  "timing_rules": {
+    "max_hold_time_minutes": 360,
+    "preferred_hold_time_minutes": 120,
+    "close_positions_by": "15:15",
+    "no_positions_after": "15:15",
+    "comment": "CRITICAL: All MIS positions MUST close by 3:15 PM"
+  },
+
+  "cost_optimization": {
+    "estimated_brokerage_per_trade": 20,
+    "estimated_total_cost_roundtrip": 40,
+    "min_profit_to_justify_trade": 50,
+    "avoid_multiple_exits": true,
+    "comment": "MIS brokerage: ₹20 or 0.03% per trade, whichever is lower"
+  },
+
+  "pattern_preferences": {
+    "preferred_patterns": [
+      "pullback_long",
+      "breakout_with_volume",
+      "support_bounce"
+    ],
+    "avoid_patterns": [
+      "range_bound",
+      "low_volume_breakout"
+    ],
+    "comment": "Intraday needs momentum - avoid choppy patterns"
+  },
+
+  "automation": {
+    "auto_execute": false,
+    "require_approval": true,
+    "allow_manual_override": false,
+    "auto_exit_at_targets": true,
+    "auto_exit_at_stops": true,
+    "auto_force_close": true,
+    "comment": "Prevent manual intervention - where losses occurred"
+  },
+
+  "validation": {
+    "backtest_required": true,
+    "min_win_rate_required": 60,
+    "min_profit_factor_required": 1.5,
+    "paper_trade_days_required": 5,
+    "comment": "MIS mode requires validation before live trading"
+  }
+}

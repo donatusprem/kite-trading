@@ -1,0 +1,64 @@
+{
+  "timestamp": "2026-02-10T09:06:45.333679",
+  "is_live": true,
+  "source": "MOCK_SIMULATION",
+  "account": {
+    "user_name": "Demo User",
+    "user_id": "DEMO01",
+    "broker": "Zerodha (Simulated)",
+    "status": "connected"
+  },
+  "margins": {
+    "net": 150000.0,
+    "available": 125000.0,
+    "used": 25000.0
+  },
+  "positions": [
+    {
+      "symbol": "RELIANCE",
+      "quantity": 10,
+      "entry_price": 2450.0,
+      "current_price": 2468.57,
+      "pnl": 185.72,
+      "pnl_percent": 0.76,
+      "type": "LONG",
+      "product": "MIS",
+      "exchange": "NSE"
+    },
+    {
+      "symbol": "TATASTEEL",
+      "quantity": 100,
+      "entry_price": 145.5,
+      "current_price": 146.34,
+      "pnl": 83.77,
+      "pnl_percent": 0.58,
+      "type": "LONG",
+      "product": "MIS",
+      "exchange": "NSE"
+    },
+    {
+      "symbol": "INFY",
+      "quantity": -15,
+      "entry_price": 1620.0,
+      "current_price": 1631.03,
+      "pnl": -165.5,
+      "pnl_percent": -0.68,
+      "type": "SHORT",
+      "product": "MIS",
+      "exchange": "NSE"
+    }
+  ],
+  "session_pnl": 103.99,
+  "total_realized": 1250.0,
+  "total_unrealized": 103.99,
+  "nifty_ltp": 22182.36,
+  "holdings": [
+    {
+      "symbol": "HDFCBANK",
+      "quantity": 50,
+      "average_price": 1450.0,
+      "current_price": 1460.0,
+      "pnl": 500.0
+    }
+  ]
+}

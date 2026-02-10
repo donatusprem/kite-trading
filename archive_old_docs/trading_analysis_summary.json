@@ -1,0 +1,17 @@
+{
+  "total_trades": 261,
+  "total_charges": 891.4899999999998,
+  "dp_charge_per_sell": 15.34,
+  "net_pnl_after_charges": -13855.940409,
+  "current_balance": -21.421685,
+  "charges_per_roundtrip": 6.8313409961685805,
+  "breakeven_pct": 0.0341567049808429,
+  "auto_squareoffs": 4,
+  "most_traded": {
+    "NATIONALUM": 37,
+    "ONGC": 28,
+    "BPCL": 26,
+    "IOC": 24,
+    "COALINDIA": 23
+  }
+}

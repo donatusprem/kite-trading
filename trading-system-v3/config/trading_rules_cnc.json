@@ -1,0 +1,111 @@
+{
+  "mode": "CNC",
+  "description": "Delivery trading using cash - your proven profitable mode",
+
+  "scoring": {
+    "min_score_threshold": 75,
+    "preferred_score": 80,
+    "comment": "Lower threshold OK for CNC - you made ₹3k profit with this"
+  },
+
+  "position_sizing": {
+    "max_position_size": 10000,
+    "max_positions": 1,
+    "position_sizing_method": "risk_based",
+    "risk_per_trade_pct": 1.5,
+    "max_capital_per_position_pct": 90,
+    "comment": "Use cash balance (add ₹10k), one position at a time"
+  },
+
+  "entry_rules": {
+    "product_type": "CNC",
+    "entry_window_start": "09:20",
+    "entry_window_end": "15:00",
+    "avoid_first_15_min": true,
+    "can_enter_late": true,
+    "comment": "Can enter until 3:00 PM - delivery allows overnight holding"
+  },
+
+  "exit_rules": {
+    "stop_loss_pct": 1.5,
+    "target1_pct": 2.5,
+    "target2_pct": 4.0,
+    "risk_reward_ratio": 2.0,
+    "partial_exit_at_target1": 0,
+    "trailing_stop": true,
+    "trailing_stop_activation": 2.5,
+    "trailing_stop_distance_pct": 1.0,
+    "breakeven_after_target1": false,
+    "force_exit_time": null,
+    "force_exit_enabled": false,
+    "single_exit_preferred": true,
+    "comment": "Full exit at T1 or T2 - saves ₹15.34 DP charge per exit"
+  },
+
+  "risk_management": {
+    "max_loss_per_trade": 150,
+    "max_daily_loss": 500,
+    "max_trades_per_day": 3,
+    "stop_trading_after_loss_streak": 2,
+    "check_capital_before_entry": true,
+    "min_cash_required": 10000,
+    "min_balance_buffer": 5000,
+    "comment": "Proven mode - made ₹3,028.94 profit in your history"
+  },
+
+  "timing_rules": {
+    "max_hold_time_hours": 48,
+    "preferred_hold_time_hours": 24,
+    "can_hold_overnight": true,
+    "can_hold_multi_day": true,
+    "comment": "Can hold 1-2 days for structure plays to develop"
+  },
+
+  "cost_optimization": {
+    "dp_charge_per_sell": 15.34,
+    "estimated_total_cost_roundtrip": 15.34,
+    "min_profit_to_justify_trade": 50,
+    "avoid_multiple_exits": true,
+    "single_exit_saves": 15.34,
+    "comment": "₹0 brokerage for delivery, only DP charge ₹15.34 per sell"
+  },
+
+  "pattern_preferences": {
+    "preferred_patterns": [
+      "pullback_long",
+      "support_bounce",
+      "structure_break",
+      "fvg_fill"
+    ],
+    "avoid_patterns": [
+      "weak_breakout",
+      "no_structure"
+    ],
+    "comment": "Technical structure plays - what worked for your ₹3k profit"
+  },
+
+  "automation": {
+    "auto_execute": false,
+    "require_approval": true,
+    "allow_manual_override": false,
+    "auto_exit_at_targets": true,
+    "auto_exit_at_stops": true,
+    "auto_force_close": false,
+    "comment": "Automation prevents emotional decisions"
+  },
+
+  "validation": {
+    "backtest_required": true,
+    "min_win_rate_required": 55,
+    "min_profit_factor_required": 1.3,
+    "paper_trade_days_required": 3,
+    "comment": "CNC already proven profitable - lighter validation needed"
+  },
+
+  "performance_notes": {
+    "historical_performance": "₹3,028.94 profit from your actual trading",
+    "what_works": "Technical structure, support bounces, FVG fills",
+    "edge_validated": true,
+    "confidence": "high"
+  }
+}
