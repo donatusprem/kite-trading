@@ -26,7 +26,11 @@ pip install <package_name>
 3. **Draft Plan**: Create a new script in `execution/trading_system/scripts/` if needed.
 4. **Update Directive**: If the workflow changes, update the relevant markdown file.
 
-### 4. Debugging
+### 4. Integrated Skills
+- **Excel Recalculation**: Use `execution/utils/xlsx/recalc.py` to fix formula errors in reports.
+- See `directives/using_skills.md` for more details.
+
+### 5. Debugging
 - Backend Logs: Check the terminal where `dashboard_api.py` is running.
 - Live Sync Logs: Check the terminal where `live_sync.py` is running.
 - System Logs: Check `execution/trading_system/journals/`.
