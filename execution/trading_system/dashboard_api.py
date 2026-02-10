@@ -685,6 +685,50 @@ async def get_module_status():
     return {"modules": modules, "timestamp": datetime.now().isoformat()}
 
 
+# ─── Config Management ──────────────────────────────────────────
+
+@app.get("/config")
+async def get_config():
+    """Read the current trading_rules.json config."""
+    config_path = BASE_DIR / "config" / "trading_rules.json"
+    try:
+        with open(config_path) as f:
+            config = json.load(f)
+        return {"config": config, "path": str(config_path), "timestamp": datetime.now().isoformat()}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.put("/config")
+async def update_config(request: Request):
+    """Update trading_rules.json with new values. Merges top-level keys."""
+    config_path = BASE_DIR / "config" / "trading_rules.json"
+    try:
+        body = await request.json()
+        updates = body.get("config", body)
+
+        # Load existing
+        with open(config_path) as f:
+            config = json.load(f)
+
+        # Deep merge: for each section, update individual keys
+        for section, values in updates.items():
+            if isinstance(values, dict) and section in config and isinstance(config[section], dict):
+                config[section].update(values)
+            else:
+                config[section] = values
+
+        # Write back
+        with open(config_path, "w") as f:
+            json.dump(config, f, indent=2)
+
+        return {"status": "updated", "config": config, "timestamp": datetime.now().isoformat()}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "error": str(e)}
+
+
 if __name__ == "__main__":
     import uvicorn
     print("Starting AI Trading Dashboard API v2")
