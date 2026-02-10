@@ -13,6 +13,7 @@ import {
     Wallet,
     BarChart3,
     Shield,
+    TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSystemData } from "@/hooks/useSystemData";
@@ -23,6 +24,7 @@ const navigation = [
     { name: "Risk Manager", href: "/risk", icon: Shield },
     { name: "Account & Stats", href: "/account", icon: Wallet },
     { name: "Live Scanner", href: "/scanner", icon: ScanLine },
+    { name: "Options", href: "/options", icon: TrendingUp },
     { name: "Active Positions", href: "/positions", icon: LineChart },
     { name: "Journal & Stats", href: "/journal", icon: BookOpen },
     { name: "System Config", href: "/settings", icon: Settings },

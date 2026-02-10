@@ -762,7 +762,105 @@ async def pre_trade_check(request: Request):
     except Exception as e:
         return {"checks": {"passed": False, "reason": str(e)}}
 
+
+# ─── Options Analyzer ──────────────────────────────────────────
+
+@app.get("/options/chain")
+async def get_option_chain(underlying: str = "NIFTY", expiry: str = "weekly"):
+    """Fetch option chain for an underlying with strike prices and premiums."""
+    try:
+        scripts_dir = str(BASE_DIR / "scripts")
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+
+        from options_analyzer import OptionsAnalyzer
+        from kite_client import KiteMCPClient
+
+        client = KiteMCPClient()
+        analyzer = OptionsAnalyzer(client)
+        chain = analyzer.get_option_chain(underlying.upper(), expiry)
+
+        if not chain:
+            return {"error": "Could not fetch option chain", "underlying": underlying}
+
+        # Serialize for JSON (convert strike keys to strings)
+        calls_serialized = {str(k): v for k, v in chain.get("calls", {}).items()}
+        puts_serialized = {str(k): v for k, v in chain.get("puts", {}).items()}
+
+        return {
+            "underlying": underlying.upper(),
+            "spot_price": chain.get("spot_price", 0),
+            "expiry": chain.get("expiry", ""),
+            "strikes": chain.get("strikes", []),
+            "calls": calls_serialized,
+            "puts": puts_serialized,
+            "atm_strike": chain.get("atm_strike", 0),
+            "timestamp": datetime.now().isoformat(),
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e), "underlying": underlying}
+
+
+@app.get("/options/oi")
+async def get_oi_analysis(underlying: str = "NIFTY", expiry: str = "weekly"):
+    """Get Open Interest analysis — PCR, max pain, support/resistance zones."""
+    try:
+        scripts_dir = str(BASE_DIR / "scripts")
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+
+        from options_analyzer import OptionsAnalyzer
+        from kite_client import KiteMCPClient
+
+        client = KiteMCPClient()
+        analyzer = OptionsAnalyzer(client)
+        chain = analyzer.get_option_chain(underlying.upper(), expiry)
+
+        if not chain or not chain.get("strikes"):
+            return {"error": "Could not fetch chain for OI analysis"}
+
+        oi = analyzer.analyze_oi(chain)
+        return {"oi_analysis": oi, "underlying": underlying.upper(), "timestamp": datetime.now().isoformat()}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e)}
+
+
+@app.post("/options/recommend")
+async def get_options_recommendation(request: Request):
+    """Get a full options trade recommendation based on signal data."""
+    try:
+        scripts_dir = str(BASE_DIR / "scripts")
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+
+        body = await request.json()
+        from options_analyzer import OptionsAnalyzer
+        from kite_client import KiteMCPClient
+
+        client = KiteMCPClient()
+        analyzer = OptionsAnalyzer(client)
+
+        scanner_signal = {
+            "score": body.get("score", 80),
+            "setup_type": body.get("direction", "LONG"),
+        }
+        capital = body.get("capital", 100000)
+        underlying = body.get("underlying", "NIFTY")
+
+        result = analyzer.recommend_trade(scanner_signal, capital, underlying)
+        return {"recommendation": result, "timestamp": datetime.now().isoformat()}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e)}
+
+
 # ─── System Info ────────────────────────────────────────────────
+
 
 @app.get("/system/modules")
 async def get_module_status():
