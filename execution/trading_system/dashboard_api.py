@@ -24,9 +24,12 @@ app.add_middleware(
 )
 
 # Paths
-BASE_DIR = Path(__file__).parent
+# Paths
+BASE_DIR = Path(__file__).resolve().parent
+ROOT_DIR = BASE_DIR.parent.parent
+
 ALERTS_DIR = BASE_DIR / "alerts"
-DATA_DIR = BASE_DIR / "data"
+DATA_DIR = ROOT_DIR / "_tmp"
 JOURNALS_DIR = BASE_DIR / "journals"
 
 # Ensure directories exist
@@ -265,6 +268,148 @@ async def trigger_scan():
             "error": str(e),
             "timestamp": datetime.now().isoformat()
         }
+
+
+OHLCV_FILE = DATA_DIR / "historical_ohlcv.json"
+
+
+def read_ohlcv() -> dict:
+    """Read the historical OHLCV data file."""
+    try:
+        if OHLCV_FILE.exists():
+            with open(OHLCV_FILE, "r") as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"Error reading OHLCV: {e}")
+    return {}
+
+
+@app.get("/chart/{symbol}")
+async def get_chart_data(symbol: str):
+    """Get OHLCV candlestick data for a symbol."""
+    ohlcv = read_ohlcv()
+    symbol_upper = symbol.upper()
+
+    if symbol_upper not in ohlcv:
+        raise HTTPException(status_code=404, detail=f"No data for {symbol_upper}")
+
+    bars = ohlcv[symbol_upper]
+
+    # Format for lightweight-charts: {time, open, high, low, close}
+    candles = []
+    volumes = []
+    for bar in bars:
+        # Parse date to YYYY-MM-DD format
+        date_str = bar["date"][:10]
+        candles.append({
+            "time": date_str,
+            "open": bar["open"],
+            "high": bar["high"],
+            "low": bar["low"],
+            "close": bar["close"],
+        })
+        volumes.append({
+            "time": date_str,
+            "value": bar.get("volume", 0),
+            "color": "rgba(6,182,212,0.3)" if bar["close"] >= bar["open"] else "rgba(239,68,68,0.3)"
+        })
+
+    return {"symbol": symbol_upper, "candles": candles, "volumes": volumes}
+
+
+@app.get("/chart/{symbol}/analysis")
+async def get_chart_analysis(symbol: str):
+    """Get technical analysis overlays for a symbol chart (EMA, S/R, FVG, patterns)."""
+    try:
+        scripts_dir = str(BASE_DIR / "scripts")
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+
+        from market_scanner import MarketScanner
+        import pandas as pd
+
+        config_path = str(BASE_DIR / "config" / "trading_rules.json")
+        scanner = MarketScanner(config_path)
+        frames = scanner.load_ohlcv()
+
+        symbol_upper = symbol.upper()
+        if symbol_upper not in frames:
+            raise HTTPException(status_code=404, detail=f"No data for {symbol_upper}")
+
+        df = frames[symbol_upper]
+        analysis = scanner.analyzer.analyze_stock(symbol_upper, df)
+
+        if analysis is None:
+            return {"symbol": symbol_upper, "error": "Insufficient data"}
+
+        # EMA lines for chart overlay
+        ema20 = df['close'].ewm(span=20).mean()
+        ema50 = df['close'].ewm(span=50).mean()
+
+        ema20_data = []
+        ema50_data = []
+        for i, row in df.iterrows():
+            date_str = str(row['date'])[:10]
+            if not pd.isna(ema20.iloc[i]):
+                ema20_data.append({"time": date_str, "value": round(float(ema20.iloc[i]), 2)})
+            if not pd.isna(ema50.iloc[i]):
+                ema50_data.append({"time": date_str, "value": round(float(ema50.iloc[i]), 2)})
+
+        # Support/Resistance levels
+        sr = analysis.get("sr_levels", {})
+
+        # FVG zones
+        fvgs = []
+        for fvg in analysis.get("fvgs", []):
+            fvgs.append({
+                "type": fvg["type"],
+                "high": round(fvg["high"], 2),
+                "low": round(fvg["low"], 2),
+                "index": fvg.get("index", 0),
+            })
+
+        # Pattern markers (candle index + label)
+        patterns = analysis.get("patterns", [])
+        pattern_markers = []
+        if patterns:
+            # Mark patterns on the last few candles
+            last_date = str(df.iloc[-1]["date"])[:10]
+            for p in patterns:
+                label = scanner.PATTERN_LABELS.get(p, p.replace("_", " ").title())
+                pattern_markers.append({
+                    "time": last_date,
+                    "position": "aboveBar" if "bullish" in p or "hammer" in p or "morning" in p else "belowBar",
+                    "color": "#06b6d4" if "bullish" in p or "hammer" in p or "morning" in p else "#ef4444",
+                    "shape": "arrowUp" if "bullish" in p or "hammer" in p or "morning" in p else "arrowDown",
+                    "text": label,
+                })
+
+        return {
+            "symbol": symbol_upper,
+            "score": analysis["score"],
+            "trend": analysis.get("trend", {}),
+            "ema20": ema20_data,
+            "ema50": ema50_data,
+            "support": [round(s, 2) for s in sr.get("support", [])],
+            "resistance": [round(r, 2) for r in sr.get("resistance", [])],
+            "fvgs": fvgs,
+            "patterns": pattern_markers,
+            "setup_type": analysis.get("setup_type", "SKIP"),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e)}
+
+
+@app.get("/chart/symbols")
+async def get_available_symbols():
+    """Get list of symbols that have chart data."""
+    ohlcv = read_ohlcv()
+    return {"symbols": list(ohlcv.keys())}
 
 
 @app.get("/health")

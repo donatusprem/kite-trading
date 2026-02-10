@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Filter, RefreshCw, ArrowRight, AlertTriangle } from "lucide-react";
+import { Search, Filter, RefreshCw, ArrowRight, AlertTriangle, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSystemData } from "@/hooks/useSystemData";
+import CandlestickChart from "@/components/CandlestickChart";
 
 export default function ScannerPage() {
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
+    const [filterText, setFilterText] = useState("");
     const { latestScan, isConnected } = useSystemData();
 
     const handleRefresh = async () => {
@@ -16,11 +19,13 @@ export default function ScannerPage() {
         } catch (e) {
             console.error("Scan trigger failed:", e);
         }
-        // Give the backend a moment to save results, then the useSystemData hook will pick it up
         setTimeout(() => setIsRefreshing(false), 2000);
     };
 
     const scanData = Array.isArray(latestScan?.data) ? latestScan.data : [];
+    const filteredData = filterText
+        ? scanData.filter((s: any) => s.symbol?.toLowerCase().includes(filterText.toLowerCase()))
+        : scanData;
 
     return (
         <div className="space-y-6">
@@ -48,6 +53,14 @@ export default function ScannerPage() {
                 </div>
             </div>
 
+            {/* Chart Panel */}
+            {selectedSymbol && (
+                <CandlestickChart
+                    symbol={selectedSymbol}
+                    onClose={() => setSelectedSymbol(null)}
+                />
+            )}
+
             {/* Filters */}
             <div className="flex items-center gap-4 py-4 border-y border-glass-border">
                 <div className="relative flex-1 max-w-sm">
@@ -55,6 +68,8 @@ export default function ScannerPage() {
                     <input
                         type="text"
                         placeholder="Filter by symbol..."
+                        value={filterText}
+                        onChange={(e) => setFilterText(e.target.value)}
                         className="w-full bg-black/20 border border-glass-border rounded-lg pl-9 pr-4 py-2 text-sm text-gray-300 focus:outline-none focus:border-primary/50"
                     />
                 </div>
@@ -81,7 +96,7 @@ export default function ScannerPage() {
                     </div>
                 )}
 
-                {scanData.map((scan: any) => (
+                {filteredData.map((scan: any) => (
                     <div key={scan.symbol} className="group relative overflow-hidden rounded-xl border border-glass-border bg-glass p-1 transition-all hover:border-primary/50">
                         <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
@@ -110,7 +125,6 @@ export default function ScannerPage() {
                                 </div>
 
                                 <div className="space-y-1">
-                                    {/* Assuming signals is an array in real data, or fallback */}
                                     {(scan.signals || [scan.pattern]).map((sig: string, i: number) => (
                                         <div key={i} className="flex items-center gap-2 text-sm text-gray-300">
                                             <div className="h-1.5 w-1.5 rounded-full bg-primary"></div>
@@ -128,11 +142,27 @@ export default function ScannerPage() {
                                         <span className="text-gray-500">Stop Loss</span>
                                         <span className="text-accent font-mono">₹{scan.stopLoss || "--"}</span>
                                     </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-500">Target 1</span>
+                                        <span className="text-primary font-mono">₹{scan.target1 || "--"}</span>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Action */}
-                            <div className="flex-shrink-0 pl-6 border-l border-glass-border">
+                            {/* Actions */}
+                            <div className="flex-shrink-0 pl-6 border-l border-glass-border flex flex-col gap-2">
+                                <button
+                                    onClick={() => setSelectedSymbol(selectedSymbol === scan.symbol ? null : scan.symbol)}
+                                    className={cn(
+                                        "flex items-center gap-2 rounded-lg px-4 py-2 font-medium text-sm transition-colors",
+                                        selectedSymbol === scan.symbol
+                                            ? "bg-primary/20 text-primary border border-primary/30"
+                                            : "bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white border border-glass-border"
+                                    )}
+                                >
+                                    <BarChart3 className="h-4 w-4" />
+                                    {selectedSymbol === scan.symbol ? "Hide Chart" : "View Chart"}
+                                </button>
                                 <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 font-bold text-black hover:bg-primary/90 transition-colors shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:shadow-[0_0_25px_rgba(6,182,212,0.5)]">
                                     Execute <ArrowRight className="h-4 w-4" />
                                 </button>

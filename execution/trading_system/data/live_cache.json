@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-02-10T09:06:45.333679",
+  "timestamp": "2026-02-10T14:17:04.398915",
   "is_live": true,
   "source": "MOCK_SIMULATION",
   "account": {
@@ -18,9 +18,9 @@
       "symbol": "RELIANCE",
       "quantity": 10,
       "entry_price": 2450.0,
-      "current_price": 2468.57,
-      "pnl": 185.72,
-      "pnl_percent": 0.76,
+      "current_price": 2439.58,
+      "pnl": -104.18,
+      "pnl_percent": -0.43,
       "type": "LONG",
       "product": "MIS",
       "exchange": "NSE"
@@ -29,9 +29,9 @@
       "symbol": "TATASTEEL",
       "quantity": 100,
       "entry_price": 145.5,
-      "current_price": 146.34,
-      "pnl": 83.77,
-      "pnl_percent": 0.58,
+      "current_price": 144.27,
+      "pnl": -122.71,
+      "pnl_percent": -0.84,
       "type": "LONG",
       "product": "MIS",
       "exchange": "NSE"
@@ -40,18 +40,18 @@
       "symbol": "INFY",
       "quantity": -15,
       "entry_price": 1620.0,
-      "current_price": 1631.03,
-      "pnl": -165.5,
-      "pnl_percent": -0.68,
+      "current_price": 1619.37,
+      "pnl": 9.43,
+      "pnl_percent": 0.04,
       "type": "SHORT",
       "product": "MIS",
       "exchange": "NSE"
     }
   ],
-  "session_pnl": 103.99,
+  "session_pnl": -217.46,
   "total_realized": 1250.0,
-  "total_unrealized": 103.99,
-  "nifty_ltp": 22182.36,
+  "total_unrealized": -217.46,
+  "nifty_ltp": 22187.69,
   "holdings": [
     {
       "symbol": "HDFCBANK",

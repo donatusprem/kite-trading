@@ -24,8 +24,18 @@ logging.basicConfig(
 logger = logging.getLogger("LiveSync")
 
 # Paths
-BASE_DIR = Path(__file__).parent.parent
-DATA_DIR = BASE_DIR / "data"
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent  # execution/trading_system/scripts -> execution/trading_system -> execution -> root
+# Note: In production this might need adjustment, ensure relative path is correct
+# Current file: root/execution/trading_system/scripts/live_sync.py
+# .parent -> scripts
+# .parent.parent -> trading_system
+# .parent.parent.parent -> execution
+# .parent.parent.parent.parent -> root
+
+# Let's be safer and use exact relative steps:
+SCRIPT_DIR = Path(__file__).resolve().parent
+ROOT_DIR = SCRIPT_DIR.parent.parent.parent 
+DATA_DIR = ROOT_DIR / "_tmp"
 CACHE_FILE = DATA_DIR / "live_cache.json"
 
 # Mock Data Generator (Fallback if no Kite connection)
