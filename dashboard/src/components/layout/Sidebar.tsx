@@ -10,13 +10,17 @@ import {
     Settings,
     Activity,
     Zap,
-    Wallet
+    Wallet,
+    BarChart3,
+    Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSystemData } from "@/hooks/useSystemData";
 
 const navigation = [
     { name: "Command Center", href: "/", icon: LayoutDashboard },
+    { name: "Signal Engine", href: "/signals", icon: BarChart3 },
+    { name: "Risk Manager", href: "/risk", icon: Shield },
     { name: "Account & Stats", href: "/account", icon: Wallet },
     { name: "Live Scanner", href: "/scanner", icon: ScanLine },
     { name: "Active Positions", href: "/positions", icon: LineChart },
@@ -75,7 +79,7 @@ export function Sidebar() {
                         <span>{isConnected ? "System Online" : "Disconnected"}</span>
                     </div>
                     <div className="mt-2 text-[10px] text-gray-500 font-mono">
-                        v3.1 Live
+                        v4.0 Live
                     </div>
                 </div>
             </div>

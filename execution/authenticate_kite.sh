@@ -10,7 +10,19 @@ echo "========================================================================"
 echo ""
 
 MCP_SERVER_URL="http://localhost:8080"
-KITE_MCP_DIR="/sessions/wizardly-confident-hopper/kite-mcp-server"
+KITE_MCP_DIR="$(cd "$(dirname "$0")/kite-mcp-server" && pwd)"
+# Hardcoding path to be absolutely sure
+ENV_FILE="/Users/ajaydonatusprem/Claude/AI Trading /.env"
+
+# Load .env variables
+if [ -f "$ENV_FILE" ]; then
+    echo "Loading .env from $ENV_FILE"
+    set -a
+    source "$ENV_FILE"
+    set +a
+else
+    echo "⚠️  .env file not found at $ENV_FILE"
+fi
 
 # Function to check if MCP server is running
 check_server() {

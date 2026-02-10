@@ -1,11 +1,15 @@
 "use client";
 
-import { Activity, ArrowUpRight, ArrowDownRight, Zap, Target, TrendingUp, AlertTriangle } from "lucide-react";
+import { Activity, ArrowUpRight, ArrowDownRight, Zap, Target, TrendingUp, AlertTriangle, BarChart3, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSystemData } from "@/hooks/useSystemData";
+import { useRiskData } from "@/hooks/useRiskData";
+import { RiskDashboardPanel } from "@/components/RiskDashboard";
+import Link from "next/link";
 
 export default function Home() {
-  const { marketStatus, positions, latestScan, isConnected } = useSystemData();
+  const { marketStatus, positions, latestScan, isConnected, isScanning, triggerLiveScan } = useSystemData();
+  const { risk, modules } = useRiskData();
 
   // All derived from live API data - no hardcoded values
   const activePositionsCount = positions.length;
@@ -124,12 +128,32 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Quick Action */}
+      <div className="flex gap-3">
+        <Link href="/signals" className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl bg-primary/10 border border-primary/20 text-primary text-sm font-medium hover:bg-primary/20 transition-all hover:shadow-[0_0_15px_rgba(6,182,212,0.15)]">
+          <BarChart3 className="h-4 w-4" />
+          Analyze Symbol
+        </Link>
+      </div>
+
       <div className="grid gap-6 md:grid-cols-7">
         {/* Main Chart / AI Insight Area */}
         <div className="col-span-4 rounded-xl border border-glass-border bg-glass p-6 min-h-[400px]">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-lg text-white">Latest AI Scans</h3>
-            <button className="text-xs text-primary hover:text-primary/80">View Full Scan &rarr;</button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => triggerLiveScan()}
+                disabled={isScanning || !isConnected}
+                className={cn(
+                  "p-1.5 rounded-lg bg-white/5 border border-glass-border text-gray-400 hover:text-white transition-all",
+                  (isScanning || !isConnected) && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                <RefreshCw className={cn("h-3.5 w-3.5", isScanning && "animate-spin")} />
+              </button>
+              <Link href="/scanner" className="text-xs text-primary hover:text-primary/80">View Full Scan &rarr;</Link>
+            </div>
           </div>
 
           <div className="space-y-3">
@@ -169,65 +193,69 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Side Panel: Active Positions */}
-        <div className="col-span-3 rounded-xl border border-glass-border bg-glass p-6">
-          <h3 className="font-semibold text-lg text-white mb-4">Live Positions</h3>
+        {/* Side Panel: Positions + Risk */}
+        <div className="col-span-3 space-y-4">
+          <div className="rounded-xl border border-glass-border bg-glass p-6">
+            <h3 className="font-semibold text-lg text-white mb-4">Live Positions</h3>
 
-          {activePositionsCount === 0 ? (
-            <div className="flex flex-col items-center justify-center h-[300px] text-gray-500 text-sm border-2 border-dashed border-glass-border rounded-lg">
-              <Activity className="h-8 w-8 mb-2 opacity-50" />
-              No active positions
-              <span className="text-xs opacity-50 mt-1">AI is scanning the market...</span>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {positions.map((pos: any, i: number) => {
-                const pnlValue = pos.pnl ?? 0;
-                const pnlPct = pos.pnl_pct ?? 0;
-                const isProfit = pnlValue >= 0;
-                const isShort = (pos.quantity ?? 0) < 0;
-                const isClosed = pos.type === "closed";
+            {activePositionsCount === 0 ? (
+              <div className="flex flex-col items-center justify-center h-[200px] text-gray-500 text-sm border-2 border-dashed border-glass-border rounded-lg">
+                <Activity className="h-8 w-8 mb-2 opacity-50" />
+                No active positions
+                <span className="text-xs opacity-50 mt-1">AI is scanning the market...</span>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {positions.map((pos: any, i: number) => {
+                  const pnlValue = pos.pnl ?? 0;
+                  const pnlPct = pos.pnl_pct ?? 0;
+                  const isProfit = pnlValue >= 0;
+                  const isShort = (pos.quantity ?? 0) < 0;
+                  const isClosed = pos.type === "closed";
+                  const progressWidth = Math.min(Math.abs(pnlPct), 100);
 
-                const progressWidth = Math.min(Math.abs(pnlPct), 100);
-
-                return (
-                  <div key={i} className={cn(
-                    "p-4 rounded-lg border",
-                    isClosed ? "bg-white/3 border-glass-border opacity-70" : "bg-white/5 border-glass-border"
-                  )}>
-                    <div className="flex justify-between items-start mb-1">
-                      <div>
-                        <span className="font-bold text-white">{pos.symbol}</span>
-                        <span className={cn(
-                          "ml-2 text-[10px] px-1.5 py-0.5 rounded font-medium",
-                          isShort ? "bg-accent/20 text-accent" : isClosed ? "bg-gray-500/20 text-gray-400" : "bg-success/20 text-success"
-                        )}>
-                          {isClosed ? "CLOSED" : isShort ? "SHORT" : "LONG"}
+                  return (
+                    <div key={i} className={cn(
+                      "p-4 rounded-lg border",
+                      isClosed ? "bg-white/3 border-glass-border opacity-70" : "bg-white/5 border-glass-border"
+                    )}>
+                      <div className="flex justify-between items-start mb-1">
+                        <div>
+                          <span className="font-bold text-white">{pos.symbol}</span>
+                          <span className={cn(
+                            "ml-2 text-[10px] px-1.5 py-0.5 rounded font-medium",
+                            isShort ? "bg-accent/20 text-accent" : isClosed ? "bg-gray-500/20 text-gray-400" : "bg-success/20 text-success"
+                          )}>
+                            {isClosed ? "CLOSED" : isShort ? "SHORT" : "LONG"}
+                          </span>
+                        </div>
+                        <span className={cn("text-sm font-mono font-bold", isProfit ? "text-success" : "text-accent")}>
+                          {isProfit ? "+" : ""}₹{pnlValue.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
                         </span>
                       </div>
-                      <span className={cn("text-sm font-mono font-bold", isProfit ? "text-success" : "text-accent")}>
-                        {isProfit ? "+" : ""}₹{pnlValue.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
-                      </span>
+                      <div className="flex justify-between items-center text-xs text-gray-400 mb-2">
+                        <span>
+                          {pos.quantity !== 0 ? `${Math.abs(pos.quantity)} qty @ ₹${pos.average_price}` : `Sold @ ₹${pos.sell_price || pos.average_price}`}
+                        </span>
+                        <span className={cn("font-medium", isProfit ? "text-success" : "text-accent")}>
+                          {pnlPct >= 0 ? "+" : ""}{pnlPct.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className={cn("h-full rounded-full", isProfit ? "bg-success" : "bg-accent")}
+                          style={{ width: `${progressWidth}%` }}
+                        ></div>
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center text-xs text-gray-400 mb-2">
-                      <span>
-                        {pos.quantity !== 0 ? `${Math.abs(pos.quantity)} qty @ ₹${pos.average_price}` : `Sold @ ₹${pos.sell_price || pos.average_price}`}
-                      </span>
-                      <span className={cn("font-medium", isProfit ? "text-success" : "text-accent")}>
-                        {pnlPct >= 0 ? "+" : ""}{pnlPct.toFixed(1)}%
-                      </span>
-                    </div>
-                    <div className="h-1.5 w-full bg-gray-700 rounded-full overflow-hidden">
-                      <div
-                        className={cn("h-full rounded-full", isProfit ? "bg-success" : "bg-accent")}
-                        style={{ width: `${progressWidth}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Risk Widget */}
+          <RiskDashboardPanel risk={risk} modules={modules} />
         </div>
       </div>
     </div>

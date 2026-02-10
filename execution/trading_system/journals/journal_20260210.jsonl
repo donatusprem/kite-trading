@@ -1,1 +1,7 @@
 {"timestamp": "2026-02-10T14:02:01.718181", "type": "scan", "opportunities_found": 6, "top_scores": [70, 60, 55, 50, 40], "top_symbols": ["ICICIBANK", "HDFCBANK", "TCS", "RELIANCE", "SBIN"]}
+{"timestamp": "2026-02-10T14:41:10.986796", "type": "scan", "opportunities_found": 19, "top_scores": [65, 60, 55, 55, 55], "top_symbols": ["RELIANCE", "BHARTIARTL", "INFY", "HDFCBANK", "ICICIBANK"]}
+{"timestamp": "2026-02-10T15:10:47.301082", "type": "scan", "opportunities_found": 19, "top_scores": [60, 60, 60, 60, 60], "top_symbols": ["TCS", "BHARTIARTL", "HDFCBANK", "ICICIBANK", "POWERGRID"]}
+{"timestamp": "2026-02-10T15:10:52.855510", "type": "scan", "opportunities_found": 19, "top_scores": [60, 60, 60, 60, 60], "top_symbols": ["TCS", "BHARTIARTL", "HDFCBANK", "ICICIBANK", "POWERGRID"]}
+{"timestamp": "2026-02-10T16:13:13.694157", "type": "scan", "opportunities_found": 19, "top_scores": [60, 60, 60, 60, 60], "top_symbols": ["TCS", "INFY", "BHARTIARTL", "HDFCBANK", "ICICIBANK"]}
+{"timestamp": "2026-02-10T16:13:50.231939", "type": "scan", "opportunities_found": 19, "top_scores": [60, 60, 60, 60, 60], "top_symbols": ["TCS", "INFY", "BHARTIARTL", "HDFCBANK", "ICICIBANK"]}
+{"timestamp": "2026-02-10T16:14:25.788591", "type": "scan", "opportunities_found": 19, "top_scores": [60, 60, 60, 60, 60], "top_symbols": ["TCS", "INFY", "BHARTIARTL", "HDFCBANK", "ICICIBANK"]}

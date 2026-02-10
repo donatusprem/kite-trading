@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 TRADING SYSTEM V3 - EXIT MANAGER
-Dynamic exit management based on technical structure
+Dynamic exit management for equity and options positions.
+Supports premium-based trailing stops for FNO_NRML option trades.
 """
 
 import json
@@ -35,7 +36,7 @@ class ExitManager:
             json.dump(self.positions, f, indent=2)
 
     def add_position(self, position: Dict):
-        """Add a new position with calculated exit levels"""
+        """Add a new equity (CNC/MIS) position with calculated exit levels"""
 
         entry_price = position['entry_price']
         position_type = position['type']  # LONG or SHORT
@@ -44,12 +45,10 @@ class ExitManager:
         # Calculate initial stop loss
         if position_type == 'LONG':
             stop_loss = entry_price * (1 - stop_loss_pct)
-            # Use support level if available and tighter than % stop
             if 'support_level' in position and position['support_level'] > stop_loss:
                 stop_loss = position['support_level']
         else:  # SHORT
             stop_loss = entry_price * (1 + stop_loss_pct)
-            # Use resistance level if available
             if 'resistance_level' in position and position['resistance_level'] < stop_loss:
                 stop_loss = position['resistance_level']
 
@@ -64,7 +63,6 @@ class ExitManager:
             target1 = entry_price - (risk * min_rr)
             target2 = entry_price - (risk * min_rr * 2)
 
-        # Add exit parameters
         position.update({
             'stop_loss': stop_loss,
             'target1': target1,
@@ -74,14 +72,61 @@ class ExitManager:
             'partial_exit_done': False,
             'entry_time': datetime.now().isoformat(),
             'last_update': datetime.now().isoformat(),
-            'exit_reasons': []
+            'exit_reasons': [],
+            'product': position.get('product', 'CNC'),
+            'is_options': False,
         })
 
         self.positions.append(position)
         self.save_positions()
-
-        # Log position entry
         self.log_position_event(position, 'ENTRY')
+
+        return position
+
+    def add_options_position(self, position: Dict):
+        """
+        Add an F&O NRML option position with premium-based exits.
+        Trails based on option premium %, not underlying price.
+        """
+        entry_premium = position['entry_price']  # This IS the option premium
+        position_type = position.get('type', 'LONG')
+
+        # Premium-based exit levels (configurable via position dict)
+        sl_pct = position.get('sl_pct', 0.30)   # 30% SL from entry premium
+        t1_pct = position.get('t1_pct', 0.50)   # 50% gain for T1
+        t2_pct = position.get('t2_pct', 1.00)   # 100% gain for T2 (2x)
+        trail_activate_pct = position.get('trail_activate_pct', 0.40)  # Start trailing after 40% gain
+        trail_distance_pct = position.get('trail_distance_pct', 0.20)  # Trail 20% below peak
+
+        if position_type == 'LONG':
+            stop_loss = entry_premium * (1 - sl_pct)
+            target1 = entry_premium * (1 + t1_pct)
+            target2 = entry_premium * (1 + t2_pct)
+        else:  # SHORT (selling options — rare for our use case)
+            stop_loss = entry_premium * (1 + sl_pct)
+            target1 = entry_premium * (1 - t1_pct)
+            target2 = entry_premium * (1 - t2_pct)
+
+        position.update({
+            'stop_loss': round(stop_loss, 2),
+            'target1': round(target1, 2),
+            'target2': round(target2, 2),
+            'trailing_stop': None,
+            'breakeven_moved': False,
+            'partial_exit_done': False,
+            'entry_time': datetime.now().isoformat(),
+            'last_update': datetime.now().isoformat(),
+            'exit_reasons': [],
+            'product': 'NRML',
+            'is_options': True,
+            'peak_premium': entry_premium,
+            'trail_activate_pct': trail_activate_pct,
+            'trail_distance_pct': trail_distance_pct,
+        })
+
+        self.positions.append(position)
+        self.save_positions()
+        self.log_position_event(position, 'OPTIONS_ENTRY')
 
         return position
 
@@ -188,14 +233,18 @@ class ExitManager:
 
     def should_partial_exit(self, position: Dict, current_price: float) -> bool:
         """Check if position should take partial profit at target1"""
-
-        if position_type == 'LONG':
+        pos_type = position['type']
+        if pos_type == 'LONG':
             return current_price >= position['target1']
         else:  # SHORT
             return current_price <= position['target1']
 
     def update_trailing_stop(self, position: Dict, current_price: float):
-        """Update trailing stop based on price movement"""
+        """Update trailing stop — supports both equity and premium-based options trails."""
+
+        if position.get('is_options'):
+            self._update_premium_trailing_stop(position, current_price)
+            return
 
         position_type = position['type']
         entry_price = position['entry_price']
@@ -208,7 +257,6 @@ class ExitManager:
         trail_distance = entry_price * 0.02
 
         if position_type == 'LONG':
-            # Trail stop up as price rises
             potential_stop = current_price - trail_distance
 
             if position['trailing_stop'] is None:
@@ -220,7 +268,6 @@ class ExitManager:
                 print(f"[TRAIL] {position['symbol']} stop moved from {old_stop:.2f} to {potential_stop:.2f}")
 
         else:  # SHORT
-            # Trail stop down as price falls
             potential_stop = current_price + trail_distance
 
             if position['trailing_stop'] is None:
@@ -230,6 +277,58 @@ class ExitManager:
                 position['trailing_stop'] = potential_stop
                 position['stop_loss'] = potential_stop
                 print(f"[TRAIL] {position['symbol']} stop moved from {old_stop:.2f} to {potential_stop:.2f}")
+
+    def _update_premium_trailing_stop(self, position: Dict, current_premium: float):
+        """
+        Premium-based trailing stop for options positions.
+        Tracks peak premium and trails at a fixed % below the peak.
+        This is the key to riding multi-day NRML option moves.
+        """
+        entry = position['entry_price']
+        peak = position.get('peak_premium', entry)
+        activate_pct = position.get('trail_activate_pct', 0.40)
+        trail_pct = position.get('trail_distance_pct', 0.20)
+
+        # Update peak premium
+        if position['type'] == 'LONG':
+            if current_premium > peak:
+                position['peak_premium'] = current_premium
+                peak = current_premium
+
+            gain_pct = (current_premium - entry) / entry if entry > 0 else 0
+
+            # Activate trailing stop once gain threshold is hit
+            if gain_pct >= activate_pct:
+                new_stop = peak * (1 - trail_pct)
+
+                if position['trailing_stop'] is None or new_stop > position['trailing_stop']:
+                    old_stop = position['trailing_stop'] or position['stop_loss']
+                    position['trailing_stop'] = round(new_stop, 2)
+                    position['stop_loss'] = round(new_stop, 2)
+                    print(f"[TRAIL-OPT] {position['symbol']} premium trail: "
+                          f"{old_stop:.2f} → {new_stop:.2f} "
+                          f"(peak: {peak:.2f}, gain: {gain_pct*100:.0f}%)")
+
+                    if not position['breakeven_moved']:
+                        position['breakeven_moved'] = True
+                        self.log_position_event(position, 'PREMIUM_TRAIL_ACTIVE')
+
+        else:  # SHORT options (selling) — trail UP
+            if current_premium < peak:
+                position['peak_premium'] = current_premium
+                peak = current_premium
+
+            gain_pct = (entry - current_premium) / entry if entry > 0 else 0
+
+            if gain_pct >= activate_pct:
+                new_stop = peak * (1 + trail_pct)
+
+                if position['trailing_stop'] is None or new_stop < position['trailing_stop']:
+                    old_stop = position['trailing_stop'] or position['stop_loss']
+                    position['trailing_stop'] = round(new_stop, 2)
+                    position['stop_loss'] = round(new_stop, 2)
+                    print(f"[TRAIL-OPT] {position['symbol']} premium trail: "
+                          f"{old_stop:.2f} → {new_stop:.2f}")
 
     def pattern_invalidated(self, position: Dict, current_data: Dict) -> bool:
         """Check if the entry pattern has been invalidated"""

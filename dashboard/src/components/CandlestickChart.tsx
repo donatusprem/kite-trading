@@ -5,6 +5,11 @@ import {
     createChart,
     ColorType,
     CrosshairMode,
+    CandlestickSeries,
+    HistogramSeries,
+    LineSeries,
+} from "lightweight-charts";
+import type {
     IChartApi,
     ISeriesApi,
     CandlestickData,
@@ -99,7 +104,7 @@ export default function CandlestickChart({ symbol, onClose }: ChartProps) {
             chartRef.current = chart;
 
             // Candlestick series
-            const candleSeries = chart.addCandlestickSeries({
+            const candleSeries = chart.addSeries(CandlestickSeries, {
                 upColor: "#06b6d4",
                 downColor: "#ef4444",
                 borderUpColor: "#06b6d4",
@@ -111,7 +116,7 @@ export default function CandlestickChart({ symbol, onClose }: ChartProps) {
             candleSeries.setData(chartData.candles as CandlestickData[]);
 
             // Volume histogram
-            const volumeSeries = chart.addHistogramSeries({
+            const volumeSeries = chart.addSeries(HistogramSeries, {
                 priceFormat: { type: "volume" },
                 priceScaleId: "volume",
             });
@@ -124,7 +129,7 @@ export default function CandlestickChart({ symbol, onClose }: ChartProps) {
 
             // EMA overlays
             if (analysisData?.ema20?.length) {
-                const ema20Series = chart.addLineSeries({
+                const ema20Series = chart.addSeries(LineSeries, {
                     color: "#fbbf24",
                     lineWidth: 1,
                     title: "EMA 20",
@@ -135,7 +140,7 @@ export default function CandlestickChart({ symbol, onClose }: ChartProps) {
             }
 
             if (analysisData?.ema50?.length) {
-                const ema50Series = chart.addLineSeries({
+                const ema50Series = chart.addSeries(LineSeries, {
                     color: "#a78bfa",
                     lineWidth: 1,
                     title: "EMA 50",
@@ -174,7 +179,7 @@ export default function CandlestickChart({ symbol, onClose }: ChartProps) {
 
             // Pattern markers
             if (analysisData?.patterns?.length) {
-                candleSeries.setMarkers(
+                (candleSeries as any).setMarkers(
                     analysisData.patterns.map((p: any) => ({
                         time: p.time,
                         position: p.position,
@@ -227,18 +232,16 @@ export default function CandlestickChart({ symbol, onClose }: ChartProps) {
                     <h3 className="text-lg font-bold text-white">{symbol}</h3>
                     {analysis && (
                         <div className="flex items-center gap-3 text-xs">
-                            <span className={`px-2 py-0.5 rounded-full font-medium ${
-                                analysis.score >= 75 ? "bg-emerald-500/20 text-emerald-400" :
+                            <span className={`px-2 py-0.5 rounded-full font-medium ${analysis.score >= 75 ? "bg-emerald-500/20 text-emerald-400" :
                                 analysis.score >= 50 ? "bg-yellow-500/20 text-yellow-400" :
-                                "bg-gray-500/20 text-gray-400"
-                            }`}>
+                                    "bg-gray-500/20 text-gray-400"
+                                }`}>
                                 Score: {analysis.score}
                             </span>
-                            <span className={`px-2 py-0.5 rounded-full font-medium ${
-                                analysis.trend?.direction === "uptrend" ? "bg-emerald-500/20 text-emerald-400" :
+                            <span className={`px-2 py-0.5 rounded-full font-medium ${analysis.trend?.direction === "uptrend" ? "bg-emerald-500/20 text-emerald-400" :
                                 analysis.trend?.direction === "downtrend" ? "bg-red-500/20 text-red-400" :
-                                "bg-gray-500/20 text-gray-400"
-                            }`}>
+                                    "bg-gray-500/20 text-gray-400"
+                                }`}>
                                 {analysis.trend?.direction || "neutral"}
                             </span>
                             {analysis.setup_type !== "SKIP" && (
@@ -298,9 +301,8 @@ export default function CandlestickChart({ symbol, onClose }: ChartProps) {
                     {analysis.fvgs.map((fvg, i) => (
                         <span
                             key={i}
-                            className={`px-2 py-0.5 rounded ${
-                                fvg.type === "bullish" ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"
-                            }`}
+                            className={`px-2 py-0.5 rounded ${fvg.type === "bullish" ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"
+                                }`}
                         >
                             {fvg.type === "bullish" ? "Bull" : "Bear"} FVG: {fvg.low} - {fvg.high}
                         </span>

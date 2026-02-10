@@ -10,43 +10,54 @@ export function useSystemData() {
     const [positions, setPositions] = useState<any[]>([]);
     const [latestScan, setLatestScan] = useState<any>(null);
     const [isConnected, setIsConnected] = useState(false);
+    const [isScanning, setIsScanning] = useState(false);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                // Parallel fetching
-                const [statusRes, posRes, scanRes] = await Promise.all([
-                    fetch(`${API_BASE}/stats/market-pulse`).catch(() => null),
-                    fetch(`${API_BASE}/positions`).catch(() => null),
-                    fetch(`${API_BASE}/scan/latest`).catch(() => null)
-                ]);
+    const fetchData = async () => {
+        try {
+            // Parallel fetching
+            const [statusRes, posRes, scanRes] = await Promise.all([
+                fetch(`${API_BASE}/stats/market-pulse`).catch(() => null),
+                fetch(`${API_BASE}/positions`).catch(() => null),
+                fetch(`${API_BASE}/scan/latest`).catch(() => null)
+            ]);
 
-                if (statusRes && statusRes.ok) {
-                    setMarketStatus(await statusRes.json());
-                    setIsConnected(true);
-                } else {
-                    setIsConnected(false);
-                }
-
-                if (posRes && posRes.ok) {
-                    const posData = await posRes.json();
-                    setPositions(Array.isArray(posData) ? posData : (posData.positions || []));
-                }
-                if (scanRes && scanRes.ok) setLatestScan(await scanRes.json());
-
-            } catch (error) {
-                console.error("Failed to connect to Trading System:", error);
+            if (statusRes && statusRes.ok) {
+                setMarketStatus(await statusRes.json());
+                setIsConnected(true);
+            } else {
                 setIsConnected(false);
             }
-        };
 
+            if (posRes && posRes.ok) {
+                const posData = await posRes.json();
+                setPositions(Array.isArray(posData) ? posData : (posData.positions || []));
+            }
+            if (scanRes && scanRes.ok) setLatestScan(await scanRes.json());
+
+        } catch (error) {
+            console.error("Failed to connect to Trading System:", error);
+            setIsConnected(false);
+        }
+    };
+
+    const triggerLiveScan = async () => {
+        setIsScanning(true);
+        try {
+            // Trigger a quick live scan for the dashboard preview
+            await fetch(`${API_BASE}/scan/trigger`, { method: 'POST' });
+            await fetchData();
+        } finally {
+            setIsScanning(false);
+        }
+    };
+
+    useEffect(() => {
         fetchData();
-        const interval = setInterval(fetchData, 5000);
-
+        const interval = setInterval(fetchData, 10000); // Poll scan results every 10s
         return () => clearInterval(interval);
     }, []);
 
-    return { marketStatus, positions, latestScan, isConnected };
+    return { marketStatus, positions, latestScan, isConnected, isScanning, triggerLiveScan, refresh: fetchData };
 }
 
 export function useAccountData() {

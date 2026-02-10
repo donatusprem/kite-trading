@@ -1,20 +1,30 @@
 """
-AI Trading Dashboard API - Live Kite Integration
-FastAPI backend that connects to Kite MCP for real-time data
+AI Trading Dashboard API
+- yfinance for historical OHLCV & chart data (free, no auth)
+- Kite API for live intraday LTP & account data (via live_cache.json)
+- Signal engine for institutional-grade indicator analysis
+- Risk manager for portfolio-level risk metrics
 """
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import json
 import os
 import sys
 from pathlib import Path
-from typing import List, Dict, Any
 from datetime import datetime
 
-app = FastAPI(title="AI Trading Dashboard API - Live")
+app = FastAPI(title="AI Trading Dashboard API v2")
 
-# Allow CORS for Next.js Frontend
+# Add scripts to path
+BASE_DIR = Path(__file__).resolve().parent
+SCRIPTS_DIR = str(BASE_DIR / "scripts")
+EXECUTION_DIR = str(BASE_DIR.parent)
+if SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, SCRIPTS_DIR)
+if EXECUTION_DIR not in sys.path:
+    sys.path.insert(0, EXECUTION_DIR)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -23,25 +33,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Paths
-# Paths
-BASE_DIR = Path(__file__).resolve().parent
 ROOT_DIR = BASE_DIR.parent.parent
-
 ALERTS_DIR = BASE_DIR / "alerts"
-DATA_DIR = ROOT_DIR / "_tmp"
+CACHE_DIR = ROOT_DIR / ".tmp"
 JOURNALS_DIR = BASE_DIR / "journals"
 
-# Ensure directories exist
 ALERTS_DIR.mkdir(exist_ok=True)
-DATA_DIR.mkdir(exist_ok=True)
+CACHE_DIR.mkdir(exist_ok=True)
 JOURNALS_DIR.mkdir(exist_ok=True)
 
-CACHE_FILE = DATA_DIR / "live_cache.json"
+CACHE_FILE = CACHE_DIR / "live_cache.json"
 
 
 def read_cache() -> dict:
-    """Read the live cache file."""
+    """Read live Kite cache (positions, margins, account)."""
     try:
         if CACHE_FILE.exists():
             with open(CACHE_FILE, "r") as f:
@@ -51,202 +56,53 @@ def read_cache() -> dict:
     return {}
 
 
+# ─── Health / Status ────────────────────────────────────────────
+
 @app.get("/")
 async def root():
-    return {
-        "message": "AI Trading Dashboard API - LIVE",
-        "status": "running",
-        "timestamp": datetime.now().isoformat()
-    }
+    return {"message": "AI Trading Dashboard API", "status": "running", "timestamp": datetime.now().isoformat()}
+
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 
 @app.get("/status")
 async def get_status():
-    """Check system health and connection status."""
     is_live = CACHE_FILE.exists()
     cache_age = None
     if is_live:
         cache_age = datetime.now().timestamp() - CACHE_FILE.stat().st_mtime
-
     return {
         "status": "online",
-        "version": "3.1-live",
+        "version": "4.0-yfinance",
         "is_live": is_live,
         "cache_age_seconds": cache_age,
-        "directories": {
-            "alerts": ALERTS_DIR.exists(),
-            "data": DATA_DIR.exists(),
-            "journals": JOURNALS_DIR.exists()
-        }
     }
 
+
+# ─── Scanner ────────────────────────────────────────────────────
 
 @app.get("/scan/latest")
 async def get_latest_scan():
-    """Get the most recent scan result/alert."""
+    """Get the most recent scan result."""
     try:
-        if not ALERTS_DIR.exists():
-            return {"error": "Alerts directory not found", "data": []}
-
         files = list(ALERTS_DIR.glob("*.json"))
         if not files:
             return {"message": "No scans found", "data": []}
-
         latest_file = max(files, key=os.path.getctime)
-
         with open(latest_file, "r") as f:
             data = json.load(f)
-
         return {"timestamp": latest_file.stat().st_mtime, "data": data}
-
     except Exception as e:
-        return {"error": str(e)}
-
-
-@app.get("/positions")
-async def get_positions():
-    """Get active positions from live cache."""
-    try:
-        data = read_cache()
-        if not data:
-            return {"positions": [], "pnl": 0.0, "is_live": False}
-
-        positions = data.get("positions", [])
-        total_pnl = data.get("session_pnl", sum(p.get("pnl", 0) for p in positions))
-
-        return {
-            "positions": positions,
-            "pnl": total_pnl,
-            "is_live": True,
-            "last_update": data.get("timestamp")
-        }
-
-    except Exception as e:
-        return {"error": str(e), "positions": [], "pnl": 0.0}
-
-
-@app.get("/stats/market-pulse")
-async def get_market_pulse():
-    """Get market pulse from live data."""
-    try:
-        data = read_cache()
-
-        if data:
-            nifty_price = data.get("nifty_ltp", 0)
-            session_pnl = data.get("session_pnl", 0)
-            total_realized = data.get("total_realized", 0)
-            total_unrealized = data.get("total_unrealized", 0)
-
-            # Sentiment based on session performance
-            if session_pnl > 5000:
-                sentiment = 85
-                trend = "strongly bullish"
-            elif session_pnl > 1000:
-                sentiment = 70
-                trend = "bullish"
-            elif session_pnl > 0:
-                sentiment = 60
-                trend = "mildly bullish"
-            elif session_pnl > -1000:
-                sentiment = 45
-                trend = "neutral"
-            else:
-                sentiment = 30
-                trend = "bearish"
-
-            return {
-                "sentiment_score": sentiment,
-                "trend": trend,
-                "volatility": "moderate",
-                "nifty_ltp": nifty_price,
-                "session_pnl": session_pnl,
-                "total_realized": total_realized,
-                "total_unrealized": total_unrealized,
-                "is_live": True
-            }
-
-        return {
-            "sentiment_score": 50,
-            "trend": "neutral",
-            "volatility": "unknown",
-            "is_live": False
-        }
-
-    except Exception as e:
-        return {"error": str(e), "sentiment_score": 50, "trend": "error"}
-
-
-@app.get("/account/profile")
-async def get_profile():
-    """Get user profile from live cache."""
-    data = read_cache()
-    account = data.get("account", {})
-    return {
-        "user_name": account.get("user_name", "Trader"),
-        "user_shortname": account.get("user_shortname", ""),
-        "user_id": account.get("user_id", ""),
-        "broker": account.get("broker", ""),
-        "is_live": bool(account)
-    }
-
-
-@app.get("/account/margins")
-async def get_margins():
-    """Get account margins from live cache."""
-    data = read_cache()
-    margins = data.get("margins", {})
-    return {
-        "net": margins.get("net", 0),
-        "cash": margins.get("cash", 0),
-        "collateral": margins.get("collateral", 0),
-        "option_premium_used": margins.get("option_premium_used", 0),
-        "is_live": bool(margins)
-    }
-
-
-@app.get("/account/holdings")
-async def get_holdings():
-    """Get holdings from live cache."""
-    data = read_cache()
-    return {
-        "holdings": data.get("holdings", []),
-        "is_live": True
-    }
-
-
-@app.get("/account/summary")
-async def get_account_summary():
-    """Get full account summary - all data in one call."""
-    data = read_cache()
-
-    margins = data.get("margins", {})
-    positions = data.get("positions", [])
-    holdings = data.get("holdings", [])
-    account = data.get("account", {})
-
-    active_positions = [p for p in positions if p.get("quantity", 0) != 0]
-    closed_positions = [p for p in positions if p.get("quantity", 0) == 0]
-
-    return {
-        "account": account,
-        "margins": margins,
-        "positions": active_positions,
-        "closed_positions": closed_positions,
-        "holdings": holdings,
-        "session_pnl": data.get("session_pnl", 0),
-        "total_realized": data.get("total_realized", 0),
-        "total_unrealized": data.get("total_unrealized", 0),
-        "nifty_ltp": data.get("nifty_ltp", 0),
-        "timestamp": data.get("timestamp"),
-        "is_live": data.get("is_live", False)
-    }
+        return {"error": str(e), "data": []}
 
 
 @app.post("/scan/trigger")
 async def trigger_scan():
-    """Trigger a market scan using real OHLCV data."""
+    """Trigger a market scan — fetches live data from yfinance."""
     try:
-        # Add scripts directory to path so we can import the scanner
         scripts_dir = str(BASE_DIR / "scripts")
         if scripts_dir not in sys.path:
             sys.path.insert(0, scripts_dir)
@@ -258,129 +114,188 @@ async def trigger_scan():
             "status": "completed",
             "timestamp": datetime.now().isoformat(),
             "count": len(results),
-            "data": results
+            "data": results,
         }
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return {
-            "status": "error",
-            "error": str(e),
-            "timestamp": datetime.now().isoformat()
-        }
+        return {"status": "error", "error": str(e), "timestamp": datetime.now().isoformat()}
 
 
-OHLCV_FILE = DATA_DIR / "historical_ohlcv.json"
-
-
-def read_ohlcv() -> dict:
-    """Read the historical OHLCV data file."""
+@app.get("/scan/live")
+async def live_scan(universe: str = "quick", preset: str = None):
+    """
+    Live scan — returns results directly (Streak-like).
+    ?universe=nifty50|banknifty|fno|quick
+    &preset=rsi_oversold|volume_breakout|ema_crossover|supertrend_buy|...
+    """
     try:
-        if OHLCV_FILE.exists():
-            with open(OHLCV_FILE, "r") as f:
-                return json.load(f)
-    except Exception as e:
-        print(f"Error reading OHLCV: {e}")
-    return {}
+        from market_scanner import MarketScanner, SCANNER_PRESETS
+        import os as _os
 
+        config_path = str(BASE_DIR / "config" / "trading_rules.json")
+        if not _os.path.exists(config_path):
+            return {"status": "error", "error": "Config not found"}
+
+        scanner = MarketScanner(config_path)
+        results = scanner.live_scan(universe=universe, preset=preset)
+
+        return {
+            "status": "completed",
+            "timestamp": datetime.now().isoformat(),
+            "universe": universe,
+            "preset": preset,
+            "count": len(results),
+            "data": results,
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "error": str(e), "timestamp": datetime.now().isoformat()}
+
+
+@app.get("/scan/presets")
+async def get_presets():
+    """Return available scanner presets (like Streak's scanner gallery)."""
+    try:
+        from market_scanner import SCANNER_PRESETS, UNIVERSES
+        return {
+            "presets": {
+                key: {
+                    "name": p["name"],
+                    "description": p["description"],
+                    "icon": p["icon"],
+                    "conditions": p["conditions"],
+                }
+                for key, p in SCANNER_PRESETS.items()
+            },
+            "universes": {
+                key: {"count": len(stocks), "stocks": list(stocks.keys())}
+                for key, stocks in UNIVERSES.items()
+            },
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.post("/scan/custom")
+async def custom_scan():
+    """
+    Run a scan with custom conditions.
+    Body: {"universe": "nifty50", "conditions": [{"indicator": "RSI", "operator": ">", "value": 70}]}
+    """
+    try:
+        from fastapi import Request
+        # Read request body manually since we can't change the function signature
+        import asyncio
+        return {"status": "error", "error": "Use /scan/live with preset parameter instead"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+
+# ─── Chart Data (yfinance) ──────────────────────────────────────
 
 @app.get("/chart/{symbol}")
-async def get_chart_data(symbol: str):
-    """Get OHLCV candlestick data for a symbol."""
-    ohlcv = read_ohlcv()
-    symbol_upper = symbol.upper()
-
-    if symbol_upper not in ohlcv:
-        raise HTTPException(status_code=404, detail=f"No data for {symbol_upper}")
-
-    bars = ohlcv[symbol_upper]
-
-    # Format for lightweight-charts: {time, open, high, low, close}
-    candles = []
-    volumes = []
-    for bar in bars:
-        # Parse date to YYYY-MM-DD format
-        date_str = bar["date"][:10]
-        candles.append({
-            "time": date_str,
-            "open": bar["open"],
-            "high": bar["high"],
-            "low": bar["low"],
-            "close": bar["close"],
-        })
-        volumes.append({
-            "time": date_str,
-            "value": bar.get("volume", 0),
-            "color": "rgba(6,182,212,0.3)" if bar["close"] >= bar["open"] else "rgba(239,68,68,0.3)"
-        })
-
-    return {"symbol": symbol_upper, "candles": candles, "volumes": volumes}
-
-
-@app.get("/chart/{symbol}/analysis")
-async def get_chart_analysis(symbol: str):
-    """Get technical analysis overlays for a symbol chart (EMA, S/R, FVG, patterns)."""
+async def get_chart_data(symbol: str, period: str = "6mo"):
+    """Get OHLCV candlestick data from yfinance for lightweight-charts."""
     try:
         scripts_dir = str(BASE_DIR / "scripts")
         if scripts_dir not in sys.path:
             sys.path.insert(0, scripts_dir)
 
-        from market_scanner import MarketScanner
+        from market_scanner import fetch_ohlcv, WATCHLIST
+
+        symbol_upper = symbol.upper()
+        yf_ticker = WATCHLIST.get(symbol_upper, f"{symbol_upper}.NS")
+
+        df = fetch_ohlcv(symbol_upper, yf_ticker, period=period)
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"No data for {symbol_upper}")
+
+        candles = []
+        volumes = []
+        for _, row in df.iterrows():
+            date_str = str(row["date"])[:10]
+            candles.append({
+                "time": date_str,
+                "open": round(float(row["open"]), 2),
+                "high": round(float(row["high"]), 2),
+                "low": round(float(row["low"]), 2),
+                "close": round(float(row["close"]), 2),
+            })
+            volumes.append({
+                "time": date_str,
+                "value": int(row.get("volume", 0)),
+                "color": "rgba(6,182,212,0.3)" if row["close"] >= row["open"] else "rgba(239,68,68,0.3)",
+            })
+
+        return {"symbol": symbol_upper, "candles": candles, "volumes": volumes}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/chart/{symbol}/analysis")
+async def get_chart_analysis(symbol: str):
+    """Get technical analysis overlays (EMA, S/R, FVG, patterns) from yfinance data."""
+    try:
+        scripts_dir = str(BASE_DIR / "scripts")
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+
+        from market_scanner import fetch_ohlcv, MarketScanner, WATCHLIST
         import pandas as pd
+
+        symbol_upper = symbol.upper()
+        yf_ticker = WATCHLIST.get(symbol_upper, f"{symbol_upper}.NS")
+
+        df = fetch_ohlcv(symbol_upper, yf_ticker)
+        if df.empty or len(df) < 50:
+            raise HTTPException(status_code=404, detail=f"Insufficient data for {symbol_upper}")
 
         config_path = str(BASE_DIR / "config" / "trading_rules.json")
         scanner = MarketScanner(config_path)
-        frames = scanner.load_ohlcv()
-
-        symbol_upper = symbol.upper()
-        if symbol_upper not in frames:
-            raise HTTPException(status_code=404, detail=f"No data for {symbol_upper}")
-
-        df = frames[symbol_upper]
         analysis = scanner.analyzer.analyze_stock(symbol_upper, df)
 
         if analysis is None:
             return {"symbol": symbol_upper, "error": "Insufficient data"}
 
-        # EMA lines for chart overlay
-        ema20 = df['close'].ewm(span=20).mean()
-        ema50 = df['close'].ewm(span=50).mean()
+        # EMA overlays
+        ema20 = df["close"].ewm(span=20).mean()
+        ema50 = df["close"].ewm(span=50).mean()
 
         ema20_data = []
         ema50_data = []
         for i, row in df.iterrows():
-            date_str = str(row['date'])[:10]
+            date_str = str(row["date"])[:10]
             if not pd.isna(ema20.iloc[i]):
                 ema20_data.append({"time": date_str, "value": round(float(ema20.iloc[i]), 2)})
             if not pd.isna(ema50.iloc[i]):
                 ema50_data.append({"time": date_str, "value": round(float(ema50.iloc[i]), 2)})
 
-        # Support/Resistance levels
         sr = analysis.get("sr_levels", {})
 
-        # FVG zones
         fvgs = []
         for fvg in analysis.get("fvgs", []):
-            fvgs.append({
-                "type": fvg["type"],
-                "high": round(fvg["high"], 2),
-                "low": round(fvg["low"], 2),
-                "index": fvg.get("index", 0),
-            })
+            fvgs.append({"type": fvg["type"], "high": round(fvg["high"], 2), "low": round(fvg["low"], 2)})
 
-        # Pattern markers (candle index + label)
         patterns = analysis.get("patterns", [])
         pattern_markers = []
         if patterns:
-            # Mark patterns on the last few candles
             last_date = str(df.iloc[-1]["date"])[:10]
             for p in patterns:
+                is_bullish = "bullish" in p or "hammer" in p or "morning" in p
                 label = scanner.PATTERN_LABELS.get(p, p.replace("_", " ").title())
                 pattern_markers.append({
                     "time": last_date,
-                    "position": "aboveBar" if "bullish" in p or "hammer" in p or "morning" in p else "belowBar",
-                    "color": "#06b6d4" if "bullish" in p or "hammer" in p or "morning" in p else "#ef4444",
-                    "shape": "arrowUp" if "bullish" in p or "hammer" in p or "morning" in p else "arrowDown",
+                    "position": "aboveBar" if is_bullish else "belowBar",
+                    "color": "#06b6d4" if is_bullish else "#ef4444",
+                    "shape": "arrowUp" if is_bullish else "arrowDown",
                     "text": label,
                 })
 
@@ -407,18 +322,313 @@ async def get_chart_analysis(symbol: str):
 
 @app.get("/chart/symbols")
 async def get_available_symbols():
-    """Get list of symbols that have chart data."""
-    ohlcv = read_ohlcv()
-    return {"symbols": list(ohlcv.keys())}
+    """Get list of symbols in the watchlist."""
+    try:
+        scripts_dir = str(BASE_DIR / "scripts")
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        from market_scanner import WATCHLIST
+        return {"symbols": list(WATCHLIST.keys())}
+    except Exception:
+        return {"symbols": []}
 
 
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+# ─── Account / Positions (Kite live cache) ──────────────────────
+
+@app.get("/positions")
+async def get_positions():
+    try:
+        data = read_cache()
+        if not data:
+            return {"positions": [], "pnl": 0.0, "is_live": False}
+        positions = data.get("positions", [])
+        total_pnl = data.get("session_pnl", sum(p.get("pnl", 0) for p in positions))
+        return {"positions": positions, "pnl": total_pnl, "is_live": True, "last_update": data.get("timestamp")}
+    except Exception as e:
+        return {"error": str(e), "positions": [], "pnl": 0.0}
+
+
+@app.get("/stats/market-pulse")
+async def get_market_pulse():
+    try:
+        data = read_cache()
+        if data:
+            session_pnl = data.get("session_pnl", 0)
+            if session_pnl > 5000:
+                sentiment, trend = 85, "strongly bullish"
+            elif session_pnl > 1000:
+                sentiment, trend = 70, "bullish"
+            elif session_pnl > 0:
+                sentiment, trend = 60, "mildly bullish"
+            elif session_pnl > -1000:
+                sentiment, trend = 45, "neutral"
+            else:
+                sentiment, trend = 30, "bearish"
+            return {
+                "sentiment_score": sentiment, "trend": trend, "volatility": "moderate",
+                "nifty_ltp": data.get("nifty_ltp", 0), "session_pnl": session_pnl,
+                "total_realized": data.get("total_realized", 0),
+                "total_unrealized": data.get("total_unrealized", 0), "is_live": True,
+            }
+        return {"sentiment_score": 50, "trend": "neutral", "volatility": "unknown", "is_live": False}
+    except Exception as e:
+        return {"error": str(e), "sentiment_score": 50, "trend": "error"}
+
+
+@app.get("/account/profile")
+async def get_profile():
+    data = read_cache()
+    account = data.get("account", {})
+    return {
+        "user_name": account.get("user_name", "Trader"),
+        "user_shortname": account.get("user_shortname", ""),
+        "user_id": account.get("user_id", ""),
+        "broker": account.get("broker", ""),
+        "is_live": bool(account),
+    }
+
+
+@app.get("/account/margins")
+async def get_margins():
+    data = read_cache()
+    margins = data.get("margins", {})
+    return {
+        "net": margins.get("net", 0), "cash": margins.get("cash", 0),
+        "collateral": margins.get("collateral", 0),
+        "option_premium_used": margins.get("option_premium_used", 0),
+        "is_live": bool(margins),
+    }
+
+
+@app.get("/account/holdings")
+async def get_holdings():
+    data = read_cache()
+    return {"holdings": data.get("holdings", []), "is_live": True}
+
+
+@app.get("/account/summary")
+async def get_account_summary():
+    data = read_cache()
+    margins = data.get("margins", {})
+    positions = data.get("positions", [])
+    active = [p for p in positions if p.get("quantity", 0) != 0]
+    closed = [p for p in positions if p.get("quantity", 0) == 0]
+    return {
+        "account": data.get("account", {}), "margins": margins,
+        "positions": active, "closed_positions": closed,
+        "holdings": data.get("holdings", []),
+        "session_pnl": data.get("session_pnl", 0),
+        "total_realized": data.get("total_realized", 0),
+        "total_unrealized": data.get("total_unrealized", 0),
+        "nifty_ltp": data.get("nifty_ltp", 0),
+        "timestamp": data.get("timestamp"),
+        "is_live": data.get("is_live", False),
+    }
+
+# ─── Signal Engine ──────────────────────────────────────────────
+
+@app.get("/signal/{symbol}")
+async def get_signal_analysis(symbol: str):
+    """Run signal engine analysis (VWAP, RSI, Supertrend, etc.) on a symbol."""
+    try:
+        from signal_engine import SignalEngine
+        from market_scanner import fetch_ohlcv, WATCHLIST
+
+        symbol_upper = symbol.upper()
+        yf_ticker = WATCHLIST.get(symbol_upper, f"{symbol_upper}.NS")
+
+        df = fetch_ohlcv(symbol_upper, yf_ticker)
+        if df.empty or len(df) < 20:
+            raise HTTPException(status_code=404, detail=f"Insufficient data for {symbol_upper}")
+
+        candles = []
+        for _, row in df.tail(100).iterrows():
+            candles.append({
+                "open": float(row["open"]), "high": float(row["high"]),
+                "low": float(row["low"]), "close": float(row["close"]),
+                "volume": float(row["volume"]),
+            })
+
+        engine = SignalEngine()
+        result = engine.analyze(candles, symbol_upper, "daily")
+
+        return {"symbol": symbol_upper, "analysis": result}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e)}
+
+
+# ─── Risk Manager ───────────────────────────────────────────────
+
+@app.get("/risk/dashboard")
+async def get_risk_dashboard():
+    """Get real-time risk metrics: portfolio heat, drawdown, Kelly sizing."""
+    try:
+        from risk_manager import RiskManager
+
+        data = read_cache()
+        positions = data.get("positions", [])
+        session_pnl = data.get("session_pnl", 0)
+        margins = data.get("margins", {})
+
+        capital = margins.get("net", 100000) or 100000
+        rm = RiskManager(config={"total_capital": capital, "max_portfolio_heat": 10.0,
+            "max_single_trade_risk": 2.0, "daily_loss_limit": 3.0,
+            "weekly_loss_limit": 7.0, "max_consecutive_losses": 3,
+            "max_sector_exposure_pct": 40, "max_correlated_positions": 2,
+            "max_open_positions": 3, "max_open_options": 2})
+
+        dashboard = rm.get_risk_dashboard(positions, session_pnl)
+        return dashboard
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e)}
+
+
+@app.get("/risk/check/{symbol}")
+async def pre_trade_risk_check(symbol: str, is_options: bool = False):
+    """Pre-trade risk gate — checks all limits before allowing a trade."""
+    try:
+        from risk_manager import RiskManager
+
+        data = read_cache()
+        positions = data.get("positions", [])
+        session_pnl = data.get("session_pnl", 0)
+        capital = data.get("margins", {}).get("net", 100000) or 100000
+
+        rm = RiskManager(config={"total_capital": capital, "max_portfolio_heat": 10.0,
+            "max_single_trade_risk": 2.0, "daily_loss_limit": 3.0,
+            "weekly_loss_limit": 7.0, "max_consecutive_losses": 3,
+            "max_sector_exposure_pct": 40, "max_correlated_positions": 2,
+            "max_open_positions": 3, "max_open_options": 2})
+
+        result = rm.full_risk_check(symbol.upper(), positions, session_pnl, is_options=is_options)
+        return result
+
+    except Exception as e:
+        return {"error": str(e)}
+
+
+# ─── Trade Recommendation ──────────────────────────────────────
+
+@app.get("/trade/recommend/{symbol}")
+async def get_trade_recommendation(symbol: str):
+    """
+    Full trade recommendation: scanner + signal engine + mode selector + risk check.
+    This is the "one-click" analysis endpoint.
+    """
+    try:
+        from signal_engine import SignalEngine
+        from market_scanner import fetch_ohlcv, MarketScanner, WATCHLIST
+        from mode_selector import ModeSelector
+        from risk_manager import RiskManager
+        import datetime as dt
+
+        symbol_upper = symbol.upper()
+        yf_ticker = WATCHLIST.get(symbol_upper, f"{symbol_upper}.NS")
+
+        # 1. Fetch data
+        df = fetch_ohlcv(symbol_upper, yf_ticker)
+        if df.empty or len(df) < 50:
+            raise HTTPException(status_code=404, detail=f"Insufficient data for {symbol_upper}")
+
+        # 2. Scanner analysis
+        config_path = str(BASE_DIR / "config" / "trading_rules.json")
+        scanner = MarketScanner(config_path)
+        analysis = scanner.analyzer.analyze_stock(symbol_upper, df)
+        if analysis is None:
+            return {"symbol": symbol_upper, "recommendation": "SKIP", "reason": "Insufficient data"}
+
+        # 3. Signal engine
+        candles = []
+        for _, row in df.tail(100).iterrows():
+            candles.append({"open": float(row["open"]), "high": float(row["high"]),
+                "low": float(row["low"]), "close": float(row["close"]),
+                "volume": float(row["volume"])})
+
+        engine = SignalEngine()
+        signal = engine.analyze(candles, symbol_upper, "daily")
+
+        # 4. Mode selection
+        data = read_cache()
+        margins = data.get("margins", {})
+        cash = margins.get("cash", 50000) or 50000
+        margin = margins.get("net", 50000) or 50000
+
+        selector = ModeSelector()
+        mode = selector.select_mode(
+            score=analysis["score"],
+            current_time=dt.datetime.now().time(),
+            available_cash=cash,
+            available_margin=margin,
+            symbol=symbol_upper,
+            trend_strength=signal.get("trend_strength", "moderate"),
+        )
+
+        # 5. Risk check
+        positions = data.get("positions", [])
+        rm = RiskManager(config={"total_capital": margin, "max_portfolio_heat": 10.0,
+            "max_single_trade_risk": 2.0, "daily_loss_limit": 3.0,
+            "weekly_loss_limit": 7.0, "max_consecutive_losses": 3,
+            "max_sector_exposure_pct": 40, "max_correlated_positions": 2,
+            "max_open_positions": 3, "max_open_options": 2})
+        risk = rm.full_risk_check(symbol_upper, positions,
+                                  data.get("session_pnl", 0),
+                                  is_options=(mode["mode"] == "FNO_NRML"))
+
+        return {
+            "symbol": symbol_upper,
+            "score": analysis["score"],
+            "setup_type": analysis.get("setup_type", "SKIP"),
+            "signal": {
+                "direction": signal.get("direction", "NEUTRAL"),
+                "confidence": signal.get("confidence", 50),
+                "trend_strength": signal.get("trend_strength", "weak"),
+                "signals": signal.get("signals", []),
+            },
+            "mode": mode,
+            "risk": risk,
+            "price": analysis.get("current_price"),
+            "timestamp": datetime.now().isoformat(),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e)}
+
+
+# ─── System Info ────────────────────────────────────────────────
+
+@app.get("/system/modules")
+async def get_module_status():
+    """Check which modules are available and working."""
+    modules = {}
+    for mod_name in ["signal_engine", "risk_manager", "mode_selector",
+                     "options_analyzer", "execution_engine", "market_scanner",
+                     "exit_manager", "cost_tracker", "learning_engine"]:
+        try:
+            __import__(mod_name)
+            modules[mod_name] = "✅ loaded"
+        except Exception as e:
+            modules[mod_name] = f"❌ {e}"
+    return {"modules": modules, "timestamp": datetime.now().isoformat()}
 
 
 if __name__ == "__main__":
     import uvicorn
-    print("Starting AI Trading Dashboard API (LIVE)")
+    print("Starting AI Trading Dashboard API v2")
+    print("  Charts/Scanner: yfinance (free)")
+    print("  Signal Engine:  VWAP, RSI, Supertrend, multi-TF")
+    print("  Risk Manager:   Portfolio heat, Kelly sizing")
+    print("  Live Data:      Kite (via cache, free tier OK)")
     print("Serving on http://0.0.0.0:8000")
     uvicorn.run(app, host="0.0.0.0", port=8000)

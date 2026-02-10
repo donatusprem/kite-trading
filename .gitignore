@@ -13,10 +13,15 @@ __pycache__/
 .venv/
 venv/
 
-# Environment
+# Environment & credentials
 .env
 .env.local
 .env.production
+credentials.json
+token.json
+
+# Intermediates (AGENTS.md Layer 3)
+.tmp/
 
 # OS
 .DS_Store
@@ -29,6 +34,5 @@ Thumbs.db
 # Claude internal
 .claude/
 
-# Temp files
-*.tmp
+# Logs
 *.log
