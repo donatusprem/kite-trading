@@ -24,7 +24,7 @@ export default function PositionsPage() {
                 <div className="text-right">
                     <div className="text-sm text-gray-400">Total P&L</div>
                     <div className={`text-2xl font-bold ${totalPnL >= 0 ? 'text-success' : 'text-error'}`}>
-                        {totalPnL >= 0 ? '+' : ''}₹{totalPnL.toLocaleString()}
+                        {(totalPnL ?? 0) >= 0 ? '+' : ''}₹{(totalPnL ?? 0).toLocaleString()}
                     </div>
                 </div>
             </div>
@@ -68,7 +68,7 @@ export default function PositionsPage() {
                                 </div>
                                 <div className="text-right">
                                     <div className={`text-xl font-bold ${pos.pnl >= 0 ? 'text-success' : 'text-error'}`}>
-                                        {pos.pnl >= 0 ? '+' : ''}₹{pos.pnl.toLocaleString()}
+                                        {(pos.pnl ?? 0) >= 0 ? '+' : ''}₹{(pos.pnl ?? 0).toLocaleString()}
                                     </div>
                                     <div className={`text-sm ${pos.pnl >= 0 ? 'text-success/70' : 'text-error/70'}`}>
                                         {pos.pnl_percent}%

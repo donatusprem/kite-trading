@@ -244,7 +244,7 @@ export function AccountOverview() {
               <div className="grid grid-cols-3 gap-4 text-xs">
                 <div>
                   <p className="text-gray-400">Win Rate</p>
-                  <p className="text-white font-medium">{result.winRate.toFixed(1)}%</p>
+                  <p className="text-white font-medium">{(result.winRate ?? 0).toFixed(1)}%</p>
                 </div>
                 <div>
                   <p className="text-gray-400">Trades</p>
@@ -276,7 +276,7 @@ export function AccountOverview() {
             <div className="flex items-center justify-between text-sm mb-2">
               <span className="text-gray-400">Margin Utilization</span>
               <span className="text-white font-medium">
-                {utilizationPercent.toFixed(1)}%
+                {(utilizationPercent ?? 0).toFixed(1)}%
               </span>
             </div>
             <div className="h-2 w-full bg-gray-700 rounded-full overflow-hidden">

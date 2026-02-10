@@ -62,8 +62,18 @@ export function RiskDashboardPanel({ risk, modules }: RiskDashboardProps) {
         );
     }
 
-    const heat = risk.portfolio_heat || { current_pct: 0, status: "SAFE", remaining_budget: 0 };
-    const drawdown = risk.drawdown || { status: "TRADING_ALLOWED", daily_pct: 0, weekly_pct: 0 };
+    const rawHeat = risk.portfolio_heat || {};
+    const heat = {
+        current_pct: rawHeat.current_pct ?? 0,
+        status: rawHeat.status ?? "SAFE",
+        remaining_budget: rawHeat.remaining_budget ?? 0,
+    };
+    const rawDrawdown = risk.drawdown || {};
+    const drawdown = {
+        status: rawDrawdown.status ?? "TRADING_ALLOWED",
+        daily_pct: rawDrawdown.daily_pct ?? 0,
+        weekly_pct: rawDrawdown.weekly_pct ?? 0,
+    };
 
     return (
         <div className="rounded-xl border border-glass-border bg-glass p-5 space-y-5">
@@ -94,7 +104,7 @@ export function RiskDashboardPanel({ risk, modules }: RiskDashboardProps) {
                         "text-lg font-bold font-mono",
                         Math.abs(drawdown.daily_pct) > 2 ? "text-accent" : "text-white"
                     )}>
-                        {drawdown.daily_pct.toFixed(1)}%
+                        {(drawdown.daily_pct ?? 0).toFixed(1)}%
                     </div>
                 </div>
                 <div className="p-3 rounded-lg bg-white/5 border border-glass-border">
@@ -103,7 +113,7 @@ export function RiskDashboardPanel({ risk, modules }: RiskDashboardProps) {
                         "text-lg font-bold font-mono",
                         Math.abs(drawdown.weekly_pct) > 5 ? "text-accent" : "text-white"
                     )}>
-                        {drawdown.weekly_pct.toFixed(1)}%
+                        {(drawdown.weekly_pct ?? 0).toFixed(1)}%
                     </div>
                 </div>
                 <div className="p-3 rounded-lg bg-white/5 border border-glass-border">

@@ -308,7 +308,7 @@ export default function ScannerPage() {
                                 <div className="col-span-2">
                                     <h3 className="text-lg font-bold text-white">{scan.symbol}</h3>
                                     <div className="text-xl font-mono text-gray-200">
-                                        ₹{scan.ltp?.toLocaleString() ?? "--"}
+                                        ₹{(scan.ltp ?? 0).toLocaleString()}
                                     </div>
                                     <span className={cn(
                                         "text-[10px] font-medium px-1.5 py-0.5 rounded mt-1 inline-block",
@@ -380,7 +380,7 @@ export default function ScannerPage() {
                                         <span className="text-gray-500">R:R</span>
                                         <span className="text-gray-300 font-mono">
                                             {scan.ltp && scan.stopLoss && scan.target1
-                                                ? `1:${((scan.target1 - scan.ltp) / (scan.ltp - scan.stopLoss)).toFixed(1)}`
+                                                ? `1:${((scan.target1 - scan.ltp) / ((scan.ltp - scan.stopLoss) || 1)).toFixed(1)}`
                                                 : "--"
                                             }
                                         </span>

@@ -110,13 +110,13 @@ export default function Home() {
               <div className="mt-2 flex items-baseline gap-2">
                 <span className={cn("text-2xl font-bold", sessionPnl >= 0 ? "text-success" : "text-accent")}>
                   {isConnected && marketStatus?.is_live
-                    ? `${sessionPnl >= 0 ? "+" : ""}₹${sessionPnl.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`
+                    ? `${(sessionPnl ?? 0) >= 0 ? "+" : ""}₹${(sessionPnl ?? 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`
                     : "--"}
                 </span>
                 {isConnected && marketStatus?.is_live && (
                   <span className={cn("text-xs font-medium flex items-center gap-0.5", sessionPnl >= 0 ? "text-success" : "text-accent")}>
                     {sessionPnl >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                    {totalRealized >= 0 ? "+" : ""}₹{totalRealized.toLocaleString("en-IN", { maximumFractionDigits: 0 })} realized
+                    {(totalRealized ?? 0) >= 0 ? "+" : ""}₹{(totalRealized ?? 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })} realized
                   </span>
                 )}
               </div>
@@ -230,7 +230,7 @@ export default function Home() {
                           </span>
                         </div>
                         <span className={cn("text-sm font-mono font-bold", isProfit ? "text-success" : "text-accent")}>
-                          {isProfit ? "+" : ""}₹{pnlValue.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                          {isProfit ? "+" : ""}₹{(pnlValue ?? 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
                         </span>
                       </div>
                       <div className="flex justify-between items-center text-xs text-gray-400 mb-2">
@@ -238,7 +238,7 @@ export default function Home() {
                           {pos.quantity !== 0 ? `${Math.abs(pos.quantity)} qty @ ₹${pos.average_price}` : `Sold @ ₹${pos.sell_price || pos.average_price}`}
                         </span>
                         <span className={cn("font-medium", isProfit ? "text-success" : "text-accent")}>
-                          {pnlPct >= 0 ? "+" : ""}{pnlPct.toFixed(1)}%
+                          {(pnlPct ?? 0) >= 0 ? "+" : ""}{(pnlPct ?? 0).toFixed(1)}%
                         </span>
                       </div>
                       <div className="h-1.5 w-full bg-gray-700 rounded-full overflow-hidden">

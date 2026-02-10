@@ -242,7 +242,7 @@ export default function OptionsPage() {
                                                     {call?.oi ? (call.oi / 1000).toFixed(0) + "K" : "—"}
                                                 </td>
                                                 <td className={cn("text-right p-2 font-mono font-medium", isITM_CE ? "text-gray-600" : "text-white")}>
-                                                    {call?.last_price?.toFixed(2) || call?.premium?.toFixed(2) || "—"}
+                                                    {(call?.last_price ?? call?.premium ?? 0).toFixed(2)}
                                                 </td>
                                                 <td className={cn(
                                                     "text-center p-2 font-mono font-bold bg-white/5",
@@ -252,7 +252,7 @@ export default function OptionsPage() {
                                                     {isATM && <span className="text-[8px] text-primary ml-1">ATM</span>}
                                                 </td>
                                                 <td className={cn("text-left p-2 font-mono font-medium", isITM_PE ? "text-gray-600" : "text-white")}>
-                                                    {put?.last_price?.toFixed(2) || put?.premium?.toFixed(2) || "—"}
+                                                    {(put?.last_price ?? put?.premium ?? 0).toFixed(2)}
                                                 </td>
                                                 <td className={cn("text-left p-2 font-mono", isITM_PE ? "text-accent/40" : "text-accent")}>
                                                     {put?.oi ? (put.oi / 1000).toFixed(0) + "K" : "—"}
@@ -322,8 +322,8 @@ export default function OptionsPage() {
                                     </div>
                                 </div>
                                 <div className="flex justify-between text-[10px] text-gray-500">
-                                    <span>CE OI: {(oi.total_call_oi / 1000).toFixed(0)}K</span>
-                                    <span>PE OI: {(oi.total_put_oi / 1000).toFixed(0)}K</span>
+                                    <span>CE OI: {((oi.total_call_oi ?? 0) / 1000).toFixed(0)}K</span>
+                                    <span>PE OI: {((oi.total_put_oi ?? 0) / 1000).toFixed(0)}K</span>
                                 </div>
                             </div>
                         ) : (

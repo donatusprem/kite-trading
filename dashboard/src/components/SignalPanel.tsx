@@ -86,7 +86,7 @@ export function SignalPanel({ signal, symbol }: SignalPanelProps) {
                 />
                 <IndicatorBadge
                     label="RSI"
-                    value={`${signal.rsi?.value?.toFixed(1) || "—"} ${signal.rsi?.zone || ""}`}
+                    value={`${(signal.rsi?.value ?? 0).toFixed(1)} ${signal.rsi?.zone || ""}`}
                     color={signal.rsi?.zone === "oversold" ? "green" : signal.rsi?.zone === "overbought" ? "red" : "blue"}
                 />
                 <IndicatorBadge
@@ -101,12 +101,12 @@ export function SignalPanel({ signal, symbol }: SignalPanelProps) {
                 />
                 <IndicatorBadge
                     label="ATR"
-                    value={`${signal.atr?.pct?.toFixed(2) || "—"}%`}
+                    value={`${(signal.atr?.pct ?? 0).toFixed(2)}%`}
                     color="blue"
                 />
                 <IndicatorBadge
                     label="Volume"
-                    value={`${signal.volume?.ratio?.toFixed(1) || "—"}x ${signal.volume?.surge ? "🔥" : ""}`}
+                    value={`${(signal.volume?.ratio ?? 0).toFixed(1)}x ${signal.volume?.surge ? "🔥" : ""}`}
                     color={signal.volume?.surge ? "green" : "gray"}
                 />
             </div>

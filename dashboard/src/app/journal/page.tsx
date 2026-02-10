@@ -54,13 +54,13 @@ export default function JournalPage() {
         },
         {
             label: "Total P&L",
-            value: `₹${(summary?.total_pnl ?? closedTrades.reduce((a, t) => a + (t.pnl || 0), 0)).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`,
+            value: `₹${(summary?.total_pnl ?? closedTrades.reduce((a, t) => a + (t.pnl || 0), 0) ?? 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`,
             icon: summary && summary.total_pnl >= 0 ? TrendingUp : TrendingDown,
             color: summary && summary.total_pnl >= 0 ? "text-success" : "text-red-400",
         },
         {
             label: "Avg R-Multiple",
-            value: summary?.avg_r_multiple?.toFixed(2) ?? "--",
+            value: (summary?.avg_r_multiple ?? 0).toFixed(2),
             icon: Target,
             color: "text-primary",
         },
@@ -68,8 +68,8 @@ export default function JournalPage() {
             label: "Avg Hold Time",
             value: summary?.avg_hold_time_minutes
                 ? summary.avg_hold_time_minutes > 60
-                    ? `${(summary.avg_hold_time_minutes / 60).toFixed(1)}h`
-                    : `${summary.avg_hold_time_minutes.toFixed(0)}m`
+                    ? `${((summary?.avg_hold_time_minutes ?? 0) / 60).toFixed(1)}h`
+                    : `${(summary?.avg_hold_time_minutes ?? 0).toFixed(0)}m`
                 : "--",
             icon: Clock,
             color: "text-gray-300",
@@ -223,7 +223,7 @@ export default function JournalPage() {
                             <div className="p-3 rounded-lg bg-white/5">
                                 <span className="text-[11px] text-gray-500 block">Avg P&L / Trade</span>
                                 <span className="text-lg font-bold text-white">
-                                    ₹{(summary.avg_pnl_per_trade || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                                    ₹{(summary?.avg_pnl_per_trade ?? 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
                                 </span>
                             </div>
                             <div className="p-3 rounded-lg bg-white/5">
@@ -233,7 +233,7 @@ export default function JournalPage() {
                                         ? (() => {
                                             const gross = closedTrades.filter(t => t.pnl > 0).reduce((a, t) => a + t.pnl, 0);
                                             const loss = Math.abs(closedTrades.filter(t => t.pnl < 0).reduce((a, t) => a + t.pnl, 0));
-                                            return loss > 0 ? (gross / loss).toFixed(2) : "∞";
+                                            return loss > 0 ? (gross / (loss || 1)).toFixed(2) : "∞";
                                         })()
                                         : "--"
                                     }
@@ -289,7 +289,7 @@ export default function JournalPage() {
                                             </div>
                                         </td>
                                         <td className={cn("py-3 px-4 text-right font-mono text-xs", trade.r_multiple >= 0 ? "text-success" : "text-red-400")}>
-                                            {trade.r_multiple?.toFixed(1) ?? "--"}R
+                                            {(trade.r_multiple ?? 0).toFixed(1)}R
                                         </td>
                                         <td className="py-3 px-4 text-right text-gray-400 text-xs">
                                             {trade.hold_time_minutes > 60
