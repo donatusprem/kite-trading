@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-Kite Data Refresher - Run after daily Kite login
-Fetches live data from Kite MCP and updates the cache file
-that the dashboard API reads from.
+Kite Data Refresher - Fetches live data and updates dashboard cache.
+Uses kiteconnect SDK directly (no MCP dependency).
+
+Run authenticate_kite.py first if you haven't logged in today.
 
 Usage:
   python3 refresh_data.py              # One-time refresh
@@ -10,129 +11,68 @@ Usage:
   python3 refresh_data.py --loop 30    # Refresh every 30s
 """
 
-import subprocess
-import json
 import sys
+import os
+import json
 import time
 from datetime import datetime
 from pathlib import Path
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "trading-system-v3"))
+
+from scripts.kite_client import KiteClient
+
 BASE_DIR = Path(__file__).parent
 CACHE_FILE = BASE_DIR / "trading-system-v3" / "data" / "live_cache.json"
-
-# Ensure data dir exists
 CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 
-def call_claude_mcp(prompt: str, tools: str) -> str:
-    """Call claude CLI with specific MCP tools."""
-    try:
-        result = subprocess.run(
-            ['claude', '-p', '--allowedTools', tools, prompt],
-            capture_output=True,
-            text=True,
-            timeout=45,
-            cwd=str(BASE_DIR)
-        )
-        return result.stdout.strip() if result.returncode == 0 else ""
-    except Exception as e:
-        print(f"  Error calling claude: {e}")
-        return ""
+def fetch_all(client: KiteClient) -> dict:
+    """Fetch all data from Kite in one go."""
+    print(f"\n{'='*50}")
+    print(f"  Refreshing Kite data - {datetime.now().strftime('%H:%M:%S')}")
+    print(f"{'='*50}")
 
-
-def fetch_positions() -> list:
-    """Fetch positions from Kite."""
-    print("  Fetching positions...")
-    raw = call_claude_mcp(
-        "Get my current positions. Return ONLY a JSON array of positions.",
-        "mcp__kite__get_positions"
-    )
-    try:
-        start = raw.find('[')
-        end = raw.rfind(']') + 1
-        if start != -1 and end > start:
-            return json.loads(raw[start:end])
-    except json.JSONDecodeError:
-        pass
-    return []
-
-
-def fetch_margins() -> dict:
-    """Fetch margins from Kite."""
-    print("  Fetching margins...")
-    raw = call_claude_mcp(
-        "Get my account margins. Return ONLY JSON with keys: net, cash, collateral, option_premium_used (all numbers).",
-        "mcp__kite__get_margins"
-    )
-    try:
-        start = raw.find('{')
-        end = raw.rfind('}') + 1
-        if start != -1 and end > start:
-            return json.loads(raw[start:end])
-    except json.JSONDecodeError:
-        pass
-    return {}
-
-
-def fetch_profile() -> dict:
-    """Fetch profile from Kite."""
     print("  Fetching profile...")
-    raw = call_claude_mcp(
-        "Get my profile. Return ONLY JSON with keys: user_name, user_shortname, user_id, broker.",
-        "mcp__kite__get_profile"
-    )
-    try:
-        start = raw.find('{')
-        end = raw.rfind('}') + 1
-        if start != -1 and end > start:
-            return json.loads(raw[start:end])
-    except json.JSONDecodeError:
-        pass
-    return {}
+    profile = client.get_profile()
 
+    print("  Fetching margins...")
+    margins = client.get_margins()
 
-def fetch_ltp() -> float:
-    """Fetch Nifty 50 LTP."""
+    print("  Fetching positions...")
+    positions = client.get_positions()
+
+    print("  Fetching holdings...")
+    holdings = client.get_holdings()
+
     print("  Fetching Nifty LTP...")
-    raw = call_claude_mcp(
-        "Get LTP for NSE:NIFTY 50. Return ONLY the number, nothing else.",
-        "mcp__kite__get_ltp"
-    )
-    try:
-        # Find a number in the output
-        for word in raw.replace(',', '').split():
-            try:
-                val = float(word)
-                if val > 10000:  # Nifty is > 10000
-                    return val
-            except ValueError:
-                continue
-    except Exception:
-        pass
-    return 0
+    ltp_data = client.get_ltp(["NSE:NIFTY 50"])
+    nifty_ltp = ltp_data.get("NSE:NIFTY 50", {}).get("last_price", 0)
+
+    return {
+        "profile": profile,
+        "margins": margins,
+        "positions": positions,
+        "holdings": holdings,
+        "nifty_ltp": nifty_ltp,
+    }
 
 
-def process_positions(raw_positions: list) -> tuple:
-    """Process raw Kite positions into dashboard format."""
-    positions = []
+def process_positions(raw_positions: dict) -> tuple:
+    """Process Kite positions into dashboard format."""
+    net_positions = raw_positions.get("net", [])
+    processed = []
     session_pnl = 0
     total_realized = 0
     total_unrealized = 0
 
-    for pos in raw_positions:
-        symbol = pos.get("tradingsymbol", pos.get("symbol", ""))
+    for pos in net_positions:
+        symbol = pos.get("tradingsymbol", "")
         quantity = pos.get("quantity", 0)
         avg_price = pos.get("average_price", 0)
         last_price = pos.get("last_price", 0)
-        buy_price = pos.get("buy_price", 0)
-        sell_price = pos.get("sell_price", 0)
         pnl = pos.get("pnl", 0)
         product = pos.get("product", "")
-
-        if avg_price == 0 and buy_price > 0:
-            avg_price = buy_price
-
-        pnl_pct = (pnl / (abs(avg_price * (pos.get("buy_quantity", 0) or abs(quantity) or 1))) * 100) if avg_price else 0
 
         entry = {
             "symbol": symbol,
@@ -141,68 +81,72 @@ def process_positions(raw_positions: list) -> tuple:
             "average_price": round(avg_price, 2),
             "last_price": round(last_price, 2),
             "pnl": round(pnl, 2),
-            "pnl_pct": round(pnl_pct, 2),
             "product": product,
         }
 
         if quantity == 0:
             entry["type"] = "closed"
-            entry["sell_price"] = round(sell_price, 2)
             total_realized += pnl
         else:
             entry["type"] = "short" if quantity < 0 else "long"
             total_unrealized += pnl
 
         session_pnl += pnl
-        positions.append(entry)
+        processed.append(entry)
 
-    return positions, round(session_pnl, 2), round(total_realized, 2), round(total_unrealized, 2)
+    return processed, round(session_pnl, 2), round(total_realized, 2), round(total_unrealized, 2)
 
 
-def refresh():
+def refresh(client: KiteClient) -> bool:
     """Main refresh function."""
-    print(f"\n{'='*50}")
-    print(f"  Refreshing Kite data - {datetime.now().strftime('%H:%M:%S')}")
-    print(f"{'='*50}")
+    data = fetch_all(client)
 
-    profile = fetch_profile()
-    margins_raw = fetch_margins()
-    raw_positions = fetch_positions()
-    nifty_ltp = fetch_ltp()
-
-    positions, session_pnl, total_realized, total_unrealized = process_positions(raw_positions)
-
-    # Build margins from raw data
-    margins = {
-        "net": margins_raw.get("net", margins_raw.get("equity", {}).get("net", 0) if isinstance(margins_raw.get("equity"), dict) else 0),
-        "cash": margins_raw.get("cash", 0),
-        "collateral": margins_raw.get("collateral", 0),
-        "option_premium_used": margins_raw.get("option_premium_used", 0)
-    }
+    profile = data["profile"]
+    margins = data["margins"]
+    positions, session_pnl, total_realized, total_unrealized = process_positions(data["positions"])
+    holdings = data["holdings"]
+    nifty_ltp = data["nifty_ltp"]
 
     cache = {
         "timestamp": datetime.now().isoformat(),
-        "nifty_ltp": nifty_ltp,
+        "is_live": True,
+        "source": "kiteconnect_sdk",
         "account": {
-            "user_name": profile.get("user_name", "Trader"),
+            "user_name": profile.get("user_name", ""),
             "user_shortname": profile.get("user_shortname", ""),
             "user_id": profile.get("user_id", ""),
-            "broker": profile.get("broker", "")
+            "broker": profile.get("broker", ""),
+            "status": "connected"
         },
-        "margins": margins,
+        "margins": {
+            "net": margins.get("net", 0),
+            "cash": margins.get("available", {}).get("cash", 0),
+            "collateral": margins.get("collateral", 0),
+            "option_premium_used": margins.get("utilised", {}).get("option_premium", 0) if isinstance(margins.get("utilised"), dict) else 0
+        },
         "positions": positions,
-        "holdings": [],
+        "holdings": [
+            {
+                "symbol": h.get("tradingsymbol", ""),
+                "quantity": h.get("quantity", 0),
+                "average_price": round(h.get("average_price", 0), 2),
+                "current_price": round(h.get("last_price", 0), 2),
+                "pnl": round(h.get("pnl", 0), 2)
+            }
+            for h in (holdings or [])
+        ],
         "session_pnl": session_pnl,
         "total_realized": total_realized,
         "total_unrealized": total_unrealized,
-        "is_live": True
+        "nifty_ltp": nifty_ltp
     }
 
-    with open(CACHE_FILE, 'w') as f:
+    with open(CACHE_FILE, "w") as f:
         json.dump(cache, f, indent=2)
 
     print(f"\n  Cache updated: {CACHE_FILE}")
-    print(f"  Positions: {len(positions)}")
+    print(f"  Account: {profile.get('user_name', '')} ({profile.get('user_id', '')})")
+    print(f"  Positions: {len([p for p in positions if p['type'] != 'closed'])}")
     print(f"  Session PnL: {session_pnl:+,.2f}")
     print(f"  Nifty: {nifty_ltp:,.2f}")
     print(f"  Margin: {margins.get('net', 0):,.2f}")
@@ -210,10 +154,15 @@ def refresh():
 
 
 def main():
+    client = KiteClient()
+
+    if not client.authenticated:
+        print("  Not authenticated. Run: python3 authenticate_kite.py")
+        sys.exit(1)
+
     loop = "--loop" in sys.argv
     interval = 60
 
-    # Parse custom interval
     if loop:
         idx = sys.argv.index("--loop")
         if idx + 1 < len(sys.argv):
@@ -223,16 +172,16 @@ def main():
                 pass
 
     if loop:
-        print(f"Running in loop mode (every {interval}s). Ctrl+C to stop.")
+        print(f"  Loop mode (every {interval}s). Ctrl+C to stop.")
         try:
             while True:
-                refresh()
+                refresh(client)
                 print(f"\n  Next refresh in {interval}s...")
                 time.sleep(interval)
         except KeyboardInterrupt:
             print("\nStopped.")
     else:
-        refresh()
+        refresh(client)
         print("\nDone. Run with --loop to keep refreshing.")
 
 

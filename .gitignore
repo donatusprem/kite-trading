@@ -13,10 +13,11 @@ __pycache__/
 .venv/
 venv/
 
-# Environment
+# Environment & Secrets
 .env
 .env.local
 .env.production
+.kite_token
 
 # OS
 .DS_Store
