@@ -6,7 +6,7 @@ AI Trading Dashboard API
 - Risk manager for portfolio-level risk metrics
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 import json
 import os
