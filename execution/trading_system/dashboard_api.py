@@ -668,6 +668,100 @@ async def get_trade_recommendation(symbol: str):
         return {"error": str(e)}
 
 
+# ─── Execution Engine ──────────────────────────────────────────
+
+@app.post("/execute/order")
+async def execute_order(request: Request):
+    """
+    Place a trade order via ExecutionEngine.
+    Body: { symbol, direction, quantity?, dry_run? }
+    """
+    try:
+        scripts_dir = str(BASE_DIR / "scripts")
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+
+        body = await request.json()
+        symbol = body.get("symbol", "")
+        direction = body.get("direction", "BUY")
+        quantity = body.get("quantity", 1)
+        dry_run = body.get("dry_run", True)  # Default to dry-run for safety
+
+        from execution_engine import ExecutionEngine
+        from kite_client import KiteMCPClient
+
+        client = KiteMCPClient()
+        engine = ExecutionEngine(client, config={"dry_run": dry_run, "require_confirmation": False})
+
+        trade_plan = {
+            "action": "TRADE",
+            "option": {"tradingsymbol": symbol, "exchange": "NSE"},
+            "position": {"quantity": quantity, "total_cost": 0, "premium": 0, "product": "CNC"},
+            "exit_levels": {},
+            "direction": direction,
+            "underlying": symbol,
+            "score": body.get("score", 0),
+        }
+
+        # Pre-trade checks
+        checks = engine.pre_trade_checks(trade_plan)
+        if not checks["passed"]:
+            return {"status": "BLOCKED", "reason": checks["reason"], "timestamp": datetime.now().isoformat()}
+
+        result = engine.place_options_order(trade_plan)
+        return {"status": result.get("status", "UNKNOWN"), "result": result, "timestamp": datetime.now().isoformat()}
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"status": "ERROR", "error": str(e)}
+
+
+@app.get("/execute/summary")
+async def get_execution_summary():
+    """Get today's execution summary — orders placed, success rate, P&L."""
+    try:
+        scripts_dir = str(BASE_DIR / "scripts")
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+
+        from execution_engine import ExecutionEngine
+        from kite_client import KiteMCPClient
+
+        client = KiteMCPClient()
+        engine = ExecutionEngine(client)
+        summary = engine.get_daily_summary()
+
+        return {"summary": summary, "timestamp": datetime.now().isoformat()}
+    except Exception as e:
+        return {"summary": {}, "error": str(e)}
+
+
+@app.post("/execute/pre-check")
+async def pre_trade_check(request: Request):
+    """Run pre-trade safety checks without placing an order."""
+    try:
+        scripts_dir = str(BASE_DIR / "scripts")
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+
+        body = await request.json()
+        from execution_engine import ExecutionEngine
+        from kite_client import KiteMCPClient
+
+        client = KiteMCPClient()
+        engine = ExecutionEngine(client)
+
+        trade_plan = {
+            "action": "TRADE",
+            "option": {"tradingsymbol": body.get("symbol", ""), "exchange": "NSE"},
+            "position": {"quantity": body.get("quantity", 1), "total_cost": 0},
+        }
+        result = engine.pre_trade_checks(trade_plan)
+        return {"checks": result, "timestamp": datetime.now().isoformat()}
+    except Exception as e:
+        return {"checks": {"passed": False, "reason": str(e)}}
+
 # ─── System Info ────────────────────────────────────────────────
 
 @app.get("/system/modules")
