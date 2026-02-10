@@ -193,8 +193,70 @@ async def custom_scan():
         return {"error": str(e)}
 
 
+# ─── Journal / Trade Log ───────────────────────────────────────
+
+@app.get("/journal/trades")
+async def get_journal_trades():
+    """Get all trades from the trade logger with performance summary."""
+    try:
+        scripts_dir = str(BASE_DIR / "scripts")
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+
+        from trade_logger import TradeLogger
+        logger = TradeLogger(journal_dir=str(JOURNALS_DIR))
+
+        trades = logger.trades or []
+        open_trades = logger.get_open_trades()
+        closed_trades = logger.get_closed_trades()
+        summary = logger.get_performance_summary()
+
+        return {
+            "trades": trades,
+            "open_count": len(open_trades),
+            "closed_count": len(closed_trades),
+            "summary": summary,
+            "timestamp": datetime.now().isoformat(),
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"trades": [], "open_count": 0, "closed_count": 0, "summary": {}, "error": str(e)}
+
+
+@app.get("/journal/activity")
+async def get_journal_activity():
+    """Read JSONL journal files and return activity grouped by date for heatmap."""
+    try:
+        activity: dict = {}
+        if JOURNALS_DIR.exists():
+            for jf in sorted(JOURNALS_DIR.glob("journal_*.jsonl")):
+                with open(jf) as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            entry = json.loads(line)
+                            ts = entry.get("timestamp", "")
+                            date_key = ts[:10]  # YYYY-MM-DD
+                            if date_key not in activity:
+                                activity[date_key] = {"scans": 0, "trades": 0, "entries": []}
+                            if entry.get("type") == "scan":
+                                activity[date_key]["scans"] += 1
+                            elif entry.get("type") in ("entry", "exit"):
+                                activity[date_key]["trades"] += 1
+                            activity[date_key]["entries"].append(entry)
+                        except json.JSONDecodeError:
+                            continue
+
+        return {"activity": activity, "total_days": len(activity), "timestamp": datetime.now().isoformat()}
+    except Exception as e:
+        return {"activity": {}, "error": str(e)}
+
 
 # ─── Chart Data (yfinance) ──────────────────────────────────────
+
 
 @app.get("/chart/{symbol}")
 async def get_chart_data(symbol: str, period: str = "6mo"):
