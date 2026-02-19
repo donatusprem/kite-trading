@@ -1,15 +1,17 @@
 "use client";
 
-import { Activity, ArrowUpRight, ArrowDownRight, Zap, Target, TrendingUp, AlertTriangle, BarChart3, RefreshCw } from "lucide-react";
+import { Activity, ArrowUpRight, ArrowDownRight, Zap, Target, TrendingUp, AlertTriangle, BarChart3, RefreshCw, Radio } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSystemData } from "@/hooks/useSystemData";
 import { useRiskData } from "@/hooks/useRiskData";
+import { useTickerWebSocket } from "@/hooks/useTickerWebSocket";
 import { RiskDashboardPanel } from "@/components/RiskDashboard";
 import Link from "next/link";
 
 export default function Home() {
   const { marketStatus, positions, latestScan, isConnected, isScanning, triggerLiveScan } = useSystemData();
   const { risk, modules } = useRiskData();
+  const { ticks, isConnected: isTickerLive, instrumentCount, getPrice } = useTickerWebSocket();
 
   // All derived from live API data - no hardcoded values
   const activePositionsCount = positions.length;
@@ -29,7 +31,14 @@ export default function Home() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight text-white">Command Center</h1>
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-3 text-sm">
+          {isTickerLive && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success/10 border border-success/20">
+              <Radio className="h-3 w-3 text-success animate-pulse" />
+              <span className="text-success text-xs font-semibold">LIVE</span>
+              <span className="text-gray-500 text-[10px]">{instrumentCount} ticks</span>
+            </div>
+          )}
           {isConnected ? (
             <>
               <span className="h-2 w-2 rounded-full bg-success animate-pulse"></span>
@@ -130,9 +139,9 @@ export default function Home() {
 
       {/* Quick Action */}
       <div className="flex gap-3">
-        <Link href="/signals" className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl bg-primary/10 border border-primary/20 text-primary text-sm font-medium hover:bg-primary/20 transition-all hover:shadow-[0_0_15px_rgba(6,182,212,0.15)]">
+        <Link href="/signals?symbol=NIFTY 50" className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl bg-primary/10 border border-primary/20 text-primary text-sm font-medium hover:bg-primary/20 transition-all hover:shadow-[0_0_15px_rgba(6,182,212,0.15)]">
           <BarChart3 className="h-4 w-4" />
-          Analyze Symbol
+          Deep Analysis
         </Link>
       </div>
 
@@ -171,7 +180,11 @@ export default function Home() {
             )}
 
             {opportunities.map((op: any, i: number) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-transparent hover:border-primary/30 hover:bg-white/10 transition-all cursor-pointer group">
+              <div
+                key={i}
+                onClick={() => window.location.href = `/signals?symbol=${op.symbol}`}
+                className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-transparent hover:border-primary/30 hover:bg-white/10 transition-all cursor-pointer group"
+              >
                 <div className="flex items-center gap-4">
                   <div className={cn("flex h-10 w-10 items-center justify-center rounded-lg font-bold text-xs", (op.score || 0) > 80 ? "bg-success/20 text-success" : "bg-primary/20 text-primary")}>
                     {op.score || "?"}
@@ -207,12 +220,18 @@ export default function Home() {
             ) : (
               <div className="space-y-4">
                 {positions.map((pos: any, i: number) => {
-                  const pnlValue = pos.pnl ?? 0;
-                  const pnlPct = pos.pnl_pct ?? 0;
-                  const isProfit = pnlValue >= 0;
-                  const isShort = (pos.quantity ?? 0) < 0;
+                  // Use live tick price if available, else fall back to cached price
+                  const tickData = getPrice(pos.symbol);
+                  const livePrice = tickData?.ltp ?? pos.current_price ?? pos.last_price ?? 0;
+                  const entryPrice = pos.entry_price ?? pos.average_price ?? 0;
+                  const qty = pos.quantity ?? 0;
+                  const livePnl = tickData ? (livePrice - entryPrice) * qty : (pos.pnl ?? 0);
+                  const livePnlPct = entryPrice > 0 ? ((livePrice - entryPrice) / entryPrice) * 100 : (pos.pnl_pct ?? 0);
+                  const isProfit = livePnl >= 0;
+                  const isShort = qty < 0;
                   const isClosed = pos.type === "closed";
-                  const progressWidth = Math.min(Math.abs(pnlPct), 100);
+                  const progressWidth = Math.min(Math.abs(livePnlPct), 100);
+                  const hasTick = !!tickData;
 
                   return (
                     <div key={i} className={cn(
@@ -228,22 +247,28 @@ export default function Home() {
                           )}>
                             {isClosed ? "CLOSED" : isShort ? "SHORT" : "LONG"}
                           </span>
+                          {hasTick && (
+                            <span className="ml-1.5 text-[9px] px-1 py-0.5 rounded bg-cyan-500/10 text-cyan-400 font-mono">
+                              LIVE
+                            </span>
+                          )}
                         </div>
                         <span className={cn("text-sm font-mono font-bold", isProfit ? "text-success" : "text-accent")}>
-                          {isProfit ? "+" : ""}₹{(pnlValue ?? 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                          {isProfit ? "+" : ""}₹{(livePnl ?? 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
                         </span>
                       </div>
                       <div className="flex justify-between items-center text-xs text-gray-400 mb-2">
                         <span>
-                          {pos.quantity !== 0 ? `${Math.abs(pos.quantity)} qty @ ₹${pos.average_price}` : `Sold @ ₹${pos.sell_price || pos.average_price}`}
+                          {qty !== 0 ? `${Math.abs(qty)} qty @ ₹${entryPrice}` : `Sold @ ₹${pos.sell_price || entryPrice}`}
+                          {hasTick && <span className="ml-1 text-cyan-400">→ ₹{livePrice.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span>}
                         </span>
                         <span className={cn("font-medium", isProfit ? "text-success" : "text-accent")}>
-                          {(pnlPct ?? 0) >= 0 ? "+" : ""}{(pnlPct ?? 0).toFixed(1)}%
+                          {livePnlPct >= 0 ? "+" : ""}{livePnlPct.toFixed(1)}%
                         </span>
                       </div>
                       <div className="h-1.5 w-full bg-gray-700 rounded-full overflow-hidden">
                         <div
-                          className={cn("h-full rounded-full", isProfit ? "bg-success" : "bg-accent")}
+                          className={cn("h-full rounded-full transition-all duration-300", isProfit ? "bg-success" : "bg-accent")}
                           style={{ width: `${progressWidth}%` }}
                         ></div>
                       </div>

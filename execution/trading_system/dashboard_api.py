@@ -6,7 +6,8 @@ AI Trading Dashboard API
 - Risk manager for portfolio-level risk metrics
 """
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+import asyncio
 from fastapi.middleware.cors import CORSMiddleware
 import json
 import os
@@ -43,6 +44,10 @@ CACHE_DIR.mkdir(exist_ok=True)
 JOURNALS_DIR.mkdir(exist_ok=True)
 
 CACHE_FILE = CACHE_DIR / "live_cache.json"
+TICK_FILE = CACHE_DIR / "live_ticks.json"
+
+# WebSocket client tracking
+ws_clients: list[WebSocket] = []
 
 
 def read_cache() -> dict:
@@ -462,10 +467,32 @@ async def get_margins():
     }
 
 
-@app.get("/account/holdings")
-async def get_holdings():
-    data = read_cache()
-    return {"holdings": data.get("holdings", []), "is_live": True}
+@app.get("/account/portfolio")
+async def get_portfolio_summary():
+    """Get calculated portfolio metrics including Mutual Funds and Lifetime P&L."""
+    try:
+        data = read_cache()
+        if not data:
+             return {"error": "Cache empty", "is_live": False}
+        
+        account = data.get("account", {})
+        
+        # Structure matching UI expectations
+        return {
+            "total_funds_added": account.get("funds_added", 0),
+            "current_value": account.get("current_value", 0),
+            "lifetime_pnl": account.get("lifetime_pnl", 0),
+            "lifetime_pnl_pct": account.get("lifetime_pnl_pct", 0),
+            "realized_pnl": data.get("total_realized", 0),
+            "unrealized_pnl": data.get("total_unrealized", 0),
+            "holdings": data.get("holdings", []), # MF + Equity
+            "equity_margin": data.get("margins", {}).get("net", 0),
+            "cash_balance": data.get("margins", {}).get("available", 0),
+            "timestamp": data.get("timestamp"),
+            "is_live": True
+        }
+    except Exception as e:
+        return {"error": str(e), "is_live": False}
 
 
 @app.get("/account/summary")
@@ -921,6 +948,75 @@ async def update_config(request: Request):
         return {"status": "error", "error": str(e)}
 
 
+# ─── WebSocket: Real-Time Tick Streaming ───────────────────────
+
+def read_ticks() -> dict:
+    """Read the shared tick file written by live_ticker.py."""
+    try:
+        if TICK_FILE.exists():
+            with open(TICK_FILE) as f:
+                return json.load(f)
+    except:
+        pass
+    return {"timestamp": None, "ticks": {}}
+
+@app.get("/ticks/latest")
+async def get_latest_ticks():
+    """REST fallback for tick data."""
+    return read_ticks()
+
+@app.websocket("/ws/ticks")
+async def websocket_ticks(websocket: WebSocket):
+    """
+    WebSocket endpoint that streams real-time tick data to the frontend.
+    Reads from live_ticks.json (written by live_ticker.py) and broadcasts
+    changes every 500ms.
+    """
+    await websocket.accept()
+    ws_clients.append(websocket)
+    last_timestamp = None
+
+    try:
+        while True:
+            ticks = read_ticks()
+            ts = ticks.get("timestamp")
+
+            # Only send if data has changed
+            if ts and ts != last_timestamp:
+                await websocket.send_json(ticks)
+                last_timestamp = ts
+
+            await asyncio.sleep(0.5)  # 500ms check interval
+    except WebSocketDisconnect:
+        pass
+    except Exception:
+        pass
+    finally:
+        if websocket in ws_clients:
+            ws_clients.remove(websocket)
+
+@app.get("/ticker/status")
+async def ticker_status():
+    """Check if the ticker service is running and providing data."""
+    ticks = read_ticks()
+    ts = ticks.get("timestamp")
+    num_ticks = len(ticks.get("ticks", {}))
+    is_live = False
+    if ts:
+        try:
+            tick_time = datetime.fromisoformat(ts)
+            age = (datetime.now() - tick_time).total_seconds()
+            is_live = age < 10  # Consider live if updated within 10s
+        except:
+            pass
+    return {
+        "is_live": is_live,
+        "timestamp": ts,
+        "instruments": num_ticks,
+        "ws_clients": len(ws_clients)
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
     print("Starting AI Trading Dashboard API v2")
@@ -928,5 +1024,6 @@ if __name__ == "__main__":
     print("  Signal Engine:  VWAP, RSI, Supertrend, multi-TF")
     print("  Risk Manager:   Portfolio heat, Kelly sizing")
     print("  Live Data:      Kite (via cache, free tier OK)")
+    print("  WebSocket:      /ws/ticks (real-time streaming)")
     print("Serving on http://0.0.0.0:8000")
     uvicorn.run(app, host="0.0.0.0", port=8000)

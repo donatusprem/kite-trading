@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ajay's Trading Sweet Spot</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; line-height: 1.6; padding: 20px; }
+
+  .container { max-width: 900px; margin: 0 auto; }
+
+  .hero { background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #334155; border-radius: 16px; padding: 32px; margin-bottom: 24px; text-align: center; }
+  .hero h1 { font-size: 28px; color: #f8fafc; margin-bottom: 8px; }
+  .hero .subtitle { color: #94a3b8; font-size: 14px; }
+  .hero .big-number { font-size: 48px; font-weight: 800; background: linear-gradient(135deg, #22c55e, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 16px 0; }
+  .hero .context { color: #64748b; font-size: 13px; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .stat-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; text-align: center; }
+  .stat-card .label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+  .stat-card .value { font-size: 24px; font-weight: 700; color: #f8fafc; margin: 4px 0; }
+  .stat-card .sub { font-size: 12px; color: #94a3b8; }
+  .stat-card.green .value { color: #22c55e; }
+  .stat-card.red .value { color: #ef4444; }
+  .stat-card.blue .value { color: #3b82f6; }
+  .stat-card.amber .value { color: #f59e0b; }
+
+  .section { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 24px; margin-bottom: 24px; }
+  .section h2 { font-size: 18px; color: #f8fafc; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .section h2 .badge { background: #22c55e; color: #0f172a; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+
+  .tier-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .tier { border-radius: 12px; padding: 20px; position: relative; overflow: hidden; }
+  .tier.t1 { background: linear-gradient(135deg, #064e3b, #065f46); border: 1px solid #10b981; }
+  .tier.t2 { background: linear-gradient(135deg, #7c2d12, #9a3412); border: 1px solid #f97316; }
+  .tier.t3 { background: linear-gradient(135deg, #1e1b4b, #312e81); border: 1px solid #818cf8; }
+  .tier .tier-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,0.6); margin-bottom: 4px; }
+  .tier h3 { font-size: 16px; color: #f8fafc; margin-bottom: 8px; }
+  .tier .pct { font-size: 32px; font-weight: 800; color: rgba(255,255,255,0.9); }
+  .tier p { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 8px; }
+  .tier .risk-tag { display: inline-block; background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-top: 8px; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; padding: 10px 12px; font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #334155; }
+  td { padding: 10px 12px; font-size: 14px; border-bottom: 1px solid #1e293b; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .highlight-row td { background: rgba(34, 197, 94, 0.1); border-left: 3px solid #22c55e; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .green { color: #22c55e; }
+  .red { color: #ef4444; }
+  .amber { color: #f59e0b; }
+
+  .scaling { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .scale-card { background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 16px; position: relative; }
+  .scale-card .month { font-size: 12px; color: #64748b; text-transform: uppercase; }
+  .scale-card .target { font-size: 20px; font-weight: 700; color: #22c55e; margin: 4px 0; }
+  .scale-card .detail { font-size: 13px; color: #94a3b8; }
+  .scale-card .arrow { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); font-size: 24px; color: #334155; }
+
+  .rules-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .rule { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 14px; }
+  .rule .rule-num { display: inline-block; background: #22c55e; color: #0f172a; width: 22px; height: 22px; border-radius: 50%; text-align: center; font-size: 12px; font-weight: 700; line-height: 22px; margin-right: 8px; }
+  .rule p { font-size: 13px; color: #cbd5e1; display: inline; }
+
+  .truth-box { background: linear-gradient(135deg, #0f172a, #1e293b); border: 2px solid #f59e0b; border-radius: 16px; padding: 24px; text-align: center; }
+  .truth-box h2 { color: #f59e0b; margin-bottom: 12px; }
+  .truth-box .path { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 16px 0; flex-wrap: wrap; }
+  .truth-box .node { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 8px 16px; }
+  .truth-box .node .amt { font-size: 18px; font-weight: 700; color: #22c55e; }
+  .truth-box .node .time { font-size: 11px; color: #64748b; }
+  .truth-box .arrow-r { color: #334155; font-size: 20px; }
+  .truth-box .bottom-line { color: #94a3b8; font-size: 14px; margin-top: 16px; font-style: italic; }
+
+  @media (max-width: 768px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .tier-grid { grid-template-columns: 1fr; }
+    .scaling { grid-template-columns: 1fr; }
+    .rules-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="hero">
+    <h1>Your Trading Sweet Spot</h1>
+    <p class="subtitle">Based on 13 real trades from your Kite tradebook (Feb 6-13, 2026)</p>
+    <div class="big-number">₹4,000 – ₹6,000</div>
+    <p style="color: #22c55e; font-size: 16px; font-weight: 600;">Risk per spread trade (10-15% of ₹40K)</p>
+    <p class="context">Monte Carlo simulation: 1,000 paths × 52 weeks | Your real win rate &amp; P&L distribution</p>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card green">
+      <div class="label">Win Rate</div>
+      <div class="value">62%</div>
+      <div class="sub">8 of 13 trades</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="label">Profit Factor</div>
+      <div class="value">3.43</div>
+      <div class="sub">₹29.2K won / ₹8.5K lost</div>
+    </div>
+    <div class="stat-card amber">
+      <div class="label">Avg Win</div>
+      <div class="value">₹3,652</div>
+      <div class="sub">24.7% of capital deployed</div>
+    </div>
+    <div class="stat-card red">
+      <div class="label">Avg Loss</div>
+      <div class="value">₹1,702</div>
+      <div class="sub">9.5% of capital deployed</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>The 3-Tier System <span class="badge">RECOMMENDED</span></h2>
+    <div class="tier-grid">
+      <div class="tier t1">
+        <div class="tier-label">Tier 1 — Bread &amp; Butter</div>
+        <h3>Spread Trades</h3>
+        <div class="pct">70%</div>
+        <p>Bull Call / Bear Put Spreads. Your direction, 100pt width. 2-3 per week.</p>
+        <div class="risk-tag">₹3,600 – ₹5,500 per trade</div>
+      </div>
+      <div class="tier t2">
+        <div class="tier-label">Tier 2 — Conviction</div>
+        <h3>Naked Options</h3>
+        <div class="pct">20%</div>
+        <p>Only when you feel STRONGLY. Like the 25500CE play. 1 per week max.</p>
+        <div class="risk-tag">₹8,000 – ₹12,000 max</div>
+      </div>
+      <div class="tier t3">
+        <div class="tier-label">Tier 3 — Theta</div>
+        <h3>Expiry Plays</h3>
+        <div class="pct">10%</div>
+        <p>Sell OTM spreads on Thursday expiry. Small but frequent wins. Flat weeks only.</p>
+        <div class="risk-tag">₹2,000 – ₹3,000 per trade</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Monte Carlo Results: Risk per Trade Sweep</h2>
+    <p style="color: #94a3b8; font-size: 13px; margin-bottom: 16px;">Hybrid mode (70% spreads + 30% naked) · 3 trades/week · 52 weeks · 1,000 simulated paths</p>
+    <table>
+      <thead>
+        <tr><th>Risk/Trade</th><th>₹ Amount</th><th class="num">Median 1yr</th><th class="num">Bad Luck (10th%)</th><th class="num">Max DD</th><th>Verdict</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>5%</td><td>₹2,000</td><td class="num">₹58K</td><td class="num">₹52K</td><td class="num amber">3%</td><td>Too slow — you'll get bored</td></tr>
+        <tr><td>8%</td><td>₹3,200</td><td class="num">₹73K</td><td class="num">₹62K</td><td class="num amber">5%</td><td>Safe but modest</td></tr>
+        <tr class="highlight-row"><td><strong>10%</strong></td><td><strong>₹4,000</strong></td><td class="num green"><strong>₹85K</strong></td><td class="num"><strong>₹68K</strong></td><td class="num amber"><strong>7%</strong></td><td class="green"><strong>Sweet spot (conservative)</strong></td></tr>
+        <tr class="highlight-row"><td><strong>15%</strong></td><td><strong>₹6,000</strong></td><td class="num green"><strong>₹1.2L</strong></td><td class="num"><strong>₹87K</strong></td><td class="num amber"><strong>11%</strong></td><td class="green"><strong>Sweet spot (growth)</strong></td></tr>
+        <tr><td>20%</td><td>₹8,000</td><td class="num">₹1.75L</td><td class="num">₹1.1L</td><td class="num amber">15%</td><td>Aggressive but viable</td></tr>
+        <tr><td>25%</td><td>₹10,000</td><td class="num">₹2.5L</td><td class="num">₹1.4L</td><td class="num red">19%</td><td>⚠️ Drawdowns get uncomfortable</td></tr>
+        <tr><td>40%</td><td>₹16,000</td><td class="num">₹6.6L</td><td class="num">₹2.8L</td><td class="num red">30%</td><td>🔴 One bad week = panic mode</td></tr>
+      </tbody>
+    </table>
+    <p style="color: #64748b; font-size: 12px; margin-top: 12px;">* These projections assume your edge persists. Real returns will vary. Think of this as a distribution of possibilities, not a guarantee.</p>
+  </div>
+
+  <div class="section">
+    <h2>Position Sizing Rules</h2>
+    <div class="rules-grid">
+      <div class="rule"><span class="rule-num">1</span><p><strong>Max 30% of capital</strong> in any single trade. Even conviction plays.</p></div>
+      <div class="rule"><span class="rule-num">2</span><p><strong>Max 3 positions</strong> open simultaneously. Don't over-commit.</p></div>
+      <div class="rule"><span class="rule-num">3</span><p><strong>3-loss streak?</strong> Cut size 50% for next week. Reset, don't revenge trade.</p></div>
+      <div class="rule"><span class="rule-num">4</span><p><strong>25% account growth?</strong> Withdraw 50% of profits. Lock in gains.</p></div>
+      <div class="rule"><span class="rule-num">5</span><p><strong>Naked stop-loss:</strong> Exit at 30% premium loss. Non-negotiable.</p></div>
+      <div class="rule"><span class="rule-num">6</span><p><strong>Spread stop-loss:</strong> Exit when spread value drops below 50% of debit paid.</p></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>6-Month Scaling Plan</h2>
+    <div class="scaling">
+      <div class="scale-card">
+        <div class="month">Month 1-2</div>
+        <div class="target">₹40K → ₹50K</div>
+        <div class="detail">Tier 1 only (spreads). Learn the rhythm. ₹4K per trade. Target: 2 winners/week = ₹2,400/week.</div>
+      </div>
+      <div class="scale-card">
+        <div class="month">Month 3-4</div>
+        <div class="target">₹50K → ₹75K</div>
+        <div class="detail">Add Tier 2 (1 naked/week max). ₹5-6K per spread, ₹10K per naked. Compounding kicks in.</div>
+      </div>
+      <div class="scale-card">
+        <div class="month">Month 5-6</div>
+        <div class="target">₹75K → ₹1L+</div>
+        <div class="detail">Add Tier 3 on flat weeks. 4 simultaneous positions. ₹7-8K per spread. Withdraw ₹15K (lock profits).</div>
+      </div>
+      <div class="scale-card">
+        <div class="month">Month 7-12</div>
+        <div class="target">₹1L → ₹2-3L</div>
+        <div class="detail">Full 3-tier system. 5-6 spreads + 1-2 nakeds. ₹10K per trade. This is where the magic happens.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="truth-box">
+    <h2>The Honest Answer</h2>
+    <p style="color: #e2e8f0; font-size: 15px;">₹40K is enough to START — but the first 3 months are about <strong>survival, not wealth</strong>.</p>
+    <div class="path">
+      <div class="node"><div class="amt">₹40K</div><div class="time">Today</div></div>
+      <div class="arrow-r">→</div>
+      <div class="node"><div class="amt">₹50K</div><div class="time">Month 2</div></div>
+      <div class="arrow-r">→</div>
+      <div class="node"><div class="amt">₹75K</div><div class="time">Month 4</div></div>
+      <div class="arrow-r">→</div>
+      <div class="node"><div class="amt">₹1L</div><div class="time">Month 6</div></div>
+      <div class="arrow-r">→</div>
+      <div class="node"><div class="amt">₹2-3L</div><div class="time">Month 12</div></div>
+    </div>
+    <p style="color: #f59e0b; font-weight: 600; margin-top: 16px;">Your 62% win rate + 3.4x profit factor = a genuine edge.</p>
+    <p style="color: #94a3b8; margin-top: 8px;">The spread structure makes sure one bad week doesn't erase a month of wins.<br>At ₹2-3L, you run 6-8 spreads simultaneously — THAT's when it compounds fast.</p>
+    <p class="bottom-line">"The first 6 months aren't about getting rich. They're about surviving long enough to let compounding work."</p>
+  </div>
+
+</div>
+</body>
+</html>

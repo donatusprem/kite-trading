@@ -1,0 +1,71 @@
+{
+  "fetchedAt": "2026-02-19T09:15:00+05:30",
+  "indices": {
+    "NIFTY50": { "last": 25786, "prevClose": 25819.35, "change": -33.35, "changePct": -0.13 },
+    "BANKNIFTY": { "last": 61550.8, "prevClose": 61550.8, "change": 0, "changePct": 0 },
+    "SENSEX": { "last": 83952.68, "prevClose": 83734.25, "change": 218.43, "changePct": 0.26 }
+  },
+  "positions": [
+    {
+      "symbol": "NIFTY 25700 PE",
+      "type": "PE",
+      "expiry": "2026-02-26",
+      "qty": 65,
+      "avgPrice": 126.40,
+      "ltp": 81.25,
+      "pnl": -2934.75,
+      "strike": 25700,
+      "status": "OTM"
+    },
+    {
+      "symbol": "NIFTY 25800 CE",
+      "type": "CE",
+      "expiry": "2026-02-26",
+      "qty": 130,
+      "avgPrice": 145.70,
+      "ltp": 148.15,
+      "pnl": 318.50,
+      "strike": 25800,
+      "status": "OTM"
+    },
+    {
+      "symbol": "NIFTY 25900 CE",
+      "type": "CE",
+      "expiry": "2026-02-26",
+      "qty": 195,
+      "avgPrice": 95.93,
+      "ltp": 97.30,
+      "pnl": 266.50,
+      "strike": 25900,
+      "status": "OTM"
+    },
+    {
+      "symbol": "NIFTY 26400 CE",
+      "type": "CE",
+      "expiry": "2026-02-26",
+      "qty": 1300,
+      "avgPrice": 11.45,
+      "ltp": 8.55,
+      "pnl": -3770.00,
+      "strike": 26400,
+      "status": "DEEP_OTM"
+    }
+  ],
+  "stocks": {
+    "RELIANCE":  { "last": 1441.3, "open": 1442, "high": 1442.1, "low": 1419.2 },
+    "INFY":      { "last": 1373.7, "open": 1375, "high": 1401,   "low": 1345.3 },
+    "TCS":       { "last": 2694.9, "open": 2684.9,"high": 2730,  "low": 2657.3 },
+    "HDFCBANK":  { "last": 924.7,  "open": 921.5, "high": 925.5, "low": 919.55 },
+    "ICICIBANK": { "last": 1408.2, "open": 1344,  "high": 1412.3,"low": 1398.9 },
+    "SBIN":      { "last": 1218.9, "open": 1220,  "high": 1224.1,"low": 1214 },
+    "AXISBANK":  { "last": 1377,   "open": 1363.3,"high": 1378.5,"low": 1353.8 },
+    "WIPRO":     { "last": 211.95, "open": 213.9, "high": 216.4, "low": 210.26 },
+    "BAJFINANCE":{ "last": 1023.8, "open": 1000,  "high": 1025.7,"low": 1007.05}
+  },
+  "marketRead": "NIFTY recovered sharply from gap-down open (25,512) to 25,786 — strong intraday reversal. Bank Nifty holding steady. 25,800 is the key resistance to watch. Calls gaining traction with recovery.",
+  "alerts": [
+    { "type": "warn",    "msg": "26400 CE: Deep OTM, 7 days to expiry. Theta decaying fast — consider exiting." },
+    { "type": "success", "msg": "25800 CE just 14 pts from ITM — watch for breakout above 25,800." },
+    { "type": "info",    "msg": "25700 PE now OTM with NIFTY recovery. Hedge weakening — reassess." }
+  ]
+}

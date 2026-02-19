@@ -19,6 +19,9 @@ venv/
 .env.production
 credentials.json
 token.json
+kite_token.json
+user_config.json
+restart_all.sh
 
 # Intermediates (AGENTS.md Layer 3)
 .tmp/

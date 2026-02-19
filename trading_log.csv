@@ -1,0 +1,2 @@
+timestamp,date,time,nifty_spot,nifty_premium,nifty_pnl,nifty_pnl_pct,vedl_spot,vedl_premium,vedl_pnl,vedl_pnl_pct,net_pnl,portfolio_value,notes
+2026-02-11 03:25:58,2026-02-11,03:25:58,25935.15,217.95,-1316.25,-8.5%,690.15,25.3,1495,5.4%,178.75,43261.75,Initial automated log entry - Stop losses active

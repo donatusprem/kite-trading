@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ajay's Market Monitor</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; padding: 20px; }
+
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #21262d; flex-wrap: wrap; gap: 12px; }
+  .header-left h1 { font-size: 20px; font-weight: 600; color: #58a6ff; }
+  .header-left .subtitle { font-size: 12px; color: #8b949e; margin-top: 3px; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .last-updated { font-size: 12px; color: #8b949e; }
+  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #3fb950; margin-right: 6px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  .btn-refresh { display: flex; align-items: center; gap: 7px; background: #21262d; border: 1px solid #30363d; color: #c9d1d9; font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: all 0.2s; outline: none; }
+  .btn-refresh:hover { background: #2d333b; border-color: #58a6ff; color: #58a6ff; }
+  .btn-refresh:active { transform: scale(0.97); }
+  .btn-refresh .icon { font-size: 16px; display: inline-block; }
+  .btn-refresh.spinning .icon { animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #toast { position: fixed; top: 20px; right: 20px; background: #1f2937; border: 1px solid #30363d; color: #e6edf3; font-size: 13px; padding: 10px 18px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); opacity: 0; transform: translateY(-8px); transition: all 0.3s; pointer-events: none; z-index: 1000; }
+  #toast.show { opacity: 1; transform: translateY(0); }
+  #toast.success { border-left: 3px solid #3fb950; }
+  #toast.error { border-left: 3px solid #f85149; }
+  #toast.info { border-left: 3px solid #58a6ff; }
+
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .grid2 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .card { background: #161b22; border: 1px solid #21262d; border-radius: 12px; padding: 20px; }
+  .card-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #8b949e; margin-bottom: 14px; font-weight: 600; }
+
+  .index-price { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+  .index-meta { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .badge { font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 700; }
+  .up { color: #3fb950; } .dn { color: #f85149; } .flat { color: #8b949e; }
+  .badge-up { background: rgba(63,185,80,0.12); color: #3fb950; }
+  .badge-dn { background: rgba(248,81,73,0.12); color: #f85149; }
+  .badge-flat { background: rgba(139,148,158,0.12); color: #8b949e; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #8b949e; border-bottom: 1px solid #21262d; font-weight: 600; }
+  td { padding: 11px 10px; border-bottom: 1px solid #1c2128; vertical-align: middle; }
+  tr.data-row:hover td { background: #1c2128; }
+  tr.total-row td { background: #1c2128; font-weight: 700; border-top: 1px solid #30363d; }
+  .tag { font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 700; }
+  .tag-ce { background: rgba(63,185,80,0.15); color: #3fb950; }
+  .tag-pe { background: rgba(248,81,73,0.15); color: #f85149; }
+  .tag-warn { background: rgba(240,136,62,0.15); color: #f0883e; }
+  .tag-ok { background: rgba(88,166,255,0.12); color: #58a6ff; }
+  .tag-deep { background: rgba(248,81,73,0.08); color: #f85149; }
+  .tag-atm { background: rgba(240,136,62,0.15); color: #f0883e; }
+
+  .stocks-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+  .stock-pill { background: #1c2128; border-radius: 8px; padding: 10px 12px; border: 1px solid #21262d; }
+  .stock-name { font-size: 11px; color: #8b949e; font-weight: 600; }
+  .stock-price { font-size: 15px; font-weight: 700; margin-top: 3px; }
+  .stock-range { font-size: 10px; color: #484f58; margin-top: 2px; }
+
+  .alert { border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 10px; font-size: 13px; line-height: 1.55; border: 1px solid transparent; }
+  .alert:last-child { margin-bottom: 0; }
+  .alert-warn { background: #1c1a0f; border-color: rgba(240,136,62,0.2); border-left: 3px solid #f0883e; }
+  .alert-info { background: #0e1a2a; border-color: rgba(88,166,255,0.2); border-left: 3px solid #58a6ff; }
+  .alert-success { background: #0d1f12; border-color: rgba(63,185,80,0.2); border-left: 3px solid #3fb950; }
+  .alert-danger { background: #1f0d0d; border-color: rgba(248,81,73,0.2); border-left: 3px solid #f85149; }
+  .alert-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+
+  .market-read { font-size: 14px; line-height: 1.8; color: #c9d1d9; }
+  .footer { text-align: center; font-size: 12px; color: #484f58; margin-top: 24px; padding-top: 16px; border-top: 1px solid #21262d; }
+  .countdown { color: #8b949e; font-weight: 600; }
+
+  @media (max-width:900px) { .grid3{grid-template-columns:1fr 1fr} .grid2{grid-template-columns:1fr} .stocks-grid{grid-template-columns:repeat(2,1fr)} }
+  @media (max-width:600px) { .grid3{grid-template-columns:1fr} .stocks-grid{grid-template-columns:repeat(2,1fr)} table{font-size:11px} td,th{padding:8px 6px} }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     MARKET DATA — Claude updates this block each run
+     ═══════════════════════════════════════════════ -->
+<script id="market-data-block">
+window.MARKET_DATA = {
+  "fetchedAt": "2026-02-19T09:32:36+05:30",
+  "indices": {
+    "NIFTY50":   { "last": 25808.10, "prevClose": 25819.35, "change": -11.25, "changePct": -0.04 },
+    "BANKNIFTY": { "last": 61417.30, "prevClose": 61550.80, "change": -133.50, "changePct": -0.22 },
+    "SENSEX":    { "last": 83672.76, "prevClose": 83734.25, "change": -61.49, "changePct": -0.07 }
+  },
+  "positions": [
+    { "symbol": "NIFTY 25700 PE (SHORT)", "type": "PE", "expiry": "2026-02-26", "qty": -65,  "avgPrice": 63.40,  "ltp": 72.40,  "pnl": -585,     "strike": 25700, "status": "OTM" },
+    { "symbol": "NIFTY 25800 CE",         "type": "CE", "expiry": "2026-02-26", "qty": 130,  "avgPrice": 145.70, "ltp": 126.00, "pnl": -2561,    "strike": 25800, "status": "NEAR_ATM" },
+    { "symbol": "NIFTY 25900 CE",         "type": "CE", "expiry": "2026-02-26", "qty": 195,  "avgPrice": 95.93,  "ltp": 78.40,  "pnl": -3419,    "strike": 25900, "status": "OTM" },
+    { "symbol": "NIFTY 26400 CE",         "type": "CE", "expiry": "2026-02-26", "qty": 1300, "avgPrice": 11.45,  "ltp": 6.70,   "pnl": -6175,    "strike": 26400, "status": "DEEP_OTM" }
+  ],
+  "stocks": {
+    "RELIANCE":   { "last": 1436.2, "open": 1443.0, "high": 1443.0, "low": 1435.2 },
+    "INFY":       { "last": 1387.2, "open": 1385.0, "high": 1398.0, "low": 1382.2 },
+    "TCS":        { "last": 2717.9, "open": 2708.0, "high": 2733.6, "low": 2706.1 },
+    "HDFCBANK":   { "last": 922.95, "open": 929.0,  "high": 929.2,  "low": 922.85 },
+    "ICICIBANK":  { "last": 1404.5, "open": 1408.5, "high": 1412.3, "low": 1403.5 },
+    "SBIN":       { "last": 1220.1, "open": 1222.9, "high": 1224.9, "low": 1219.2 },
+    "AXISBANK":   { "last": 1370.6, "open": 1381.1, "high": 1382.8, "low": 1369.6 },
+    "WIPRO":      { "last": 213.45, "open": 214.0,  "high": 215.44, "low": 213.28 },
+    "BAJFINANCE": { "last": 1019.65,"open": 1024.0, "high": 1024.5, "low": 1017.9 }
+  },
+  "marketRead": "NIFTY flat at 25,808 — opened strong at 25,873 but sold off quickly. Bank Nifty weaker at 61,417 (-133 pts). Market is ranging with a mild bearish bias early session. IT bucking the trend (INFY, TCS green). Watch 25,800 as support now — a break below could pressure calls hard.",
+  "alerts": [
+    { "type": "danger", "msg": "26400 CE: ₹6.70 LTP, -41.5% loss, 7 days left. Deep OTM — exit strongly recommended." },
+    { "type": "warn",   "msg": "25900 CE: -35.6% loss, OTM by 92 pts. Needs sharp rally. Review exit." },
+    { "type": "warn",   "msg": "25800 CE: NIFTY at 25,808 — just 8 pts ITM but premium collapsed to 126. Watch closely." },
+    { "type": "info",   "msg": "25700 PE SHORT: OTM (NIFTY above 25,700) but LTP rose to 72.4 — IV expansion hurting short. Hold if NIFTY stays above 25,700." }
+  ]
+};
+</script>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <h1>⚡ Ajay's Market Monitor</h1>
+    <div class="subtitle">NIFTY Options · Expiry Feb 26, 2026</div>
+  </div>
+  <div class="header-right">
+    <div class="last-updated"><span class="dot"></span>Updated: <span id="updateTime">—</span></div>
+    <button class="btn-refresh" id="refreshBtn" onclick="refresh()">
+      <span class="icon">↻</span> Refresh
+    </button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- Indices -->
+<div class="grid3">
+  <div class="card"><div class="card-title">NIFTY 50</div><div class="index-price" id="n50-price">—</div><div class="index-meta"><span class="badge" id="n50-badge">—</span><span id="n50-chg" style="font-size:12px">—</span></div></div>
+  <div class="card"><div class="card-title">NIFTY BANK</div><div class="index-price" id="nb-price">—</div><div class="index-meta"><span class="badge" id="nb-badge">—</span><span id="nb-chg" style="font-size:12px">—</span></div></div>
+  <div class="card"><div class="card-title">SENSEX</div><div class="index-price" id="sx-price">—</div><div class="index-meta"><span class="badge" id="sx-badge">—</span><span id="sx-chg" style="font-size:12px">—</span></div></div>
+</div>
+
+<!-- Positions -->
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-title">📋 My Positions</div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead><tr><th>Symbol</th><th>Type</th><th>Qty</th><th>Avg</th><th>LTP</th><th>P&L</th><th>Status</th></tr></thead>
+      <tbody id="positionsBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Market Read + Alerts -->
+<div class="grid2">
+  <div class="card"><div class="card-title">🧭 Market Read</div><div class="market-read" id="marketRead">—</div></div>
+  <div class="card"><div class="card-title">⚡ Alerts</div><div id="alertsBox"></div></div>
+</div>
+
+<!-- Key Stocks -->
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-title">📈 Key Stocks</div>
+  <div class="stocks-grid" id="stocksGrid"></div>
+</div>
+
+<div class="footer">
+  Auto-refresh in <span class="countdown" id="countdown">15:00</span> &nbsp;·&nbsp;
+  Ask Claude to run <strong>market-monitor</strong> anytime for a live data update
+</div>
+
+<script>
+  let countdownSecs = 15 * 60;
+  let countdownTimer = null;
+
+  const fmt  = (n, d=2) => Number(n).toLocaleString('en-IN', {minimumFractionDigits:d, maximumFractionDigits:d});
+  const sign = n => n >= 0 ? '+' : '';
+  const cc   = n => n > 0 ? 'up' : n < 0 ? 'dn' : 'flat';
+  const bc   = n => n > 0 ? 'badge-up' : n < 0 ? 'badge-dn' : 'badge-flat';
+
+  function toast(msg, type='success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.className = `show ${type}`;
+    setTimeout(() => t.className = '', 3000);
+  }
+
+  function startCountdown() {
+    clearInterval(countdownTimer);
+    countdownSecs = 15 * 60;
+    countdownTimer = setInterval(() => {
+      countdownSecs--;
+      const m = String(Math.floor(countdownSecs/60)).padStart(2,'0');
+      const s = String(countdownSecs%60).padStart(2,'0');
+      document.getElementById('countdown').textContent = `${m}:${s}`;
+      if (countdownSecs <= 0) refresh();
+    }, 1000);
+  }
+
+  function renderAll(data) {
+    // Indices
+    [['n50', data.indices.NIFTY50], ['nb', data.indices.BANKNIFTY], ['sx', data.indices.SENSEX]].forEach(([id, idx]) => {
+      document.getElementById(`${id}-price`).textContent = fmt(idx.last);
+      const chg = document.getElementById(`${id}-chg`);
+      const bdg = document.getElementById(`${id}-badge`);
+      chg.textContent = `${sign(idx.change)}${fmt(idx.change)} (${sign(idx.changePct)}${fmt(idx.changePct)}%)`;
+      chg.className = cc(idx.change);
+      bdg.textContent = `${sign(idx.change)}${fmt(idx.change)}`;
+      bdg.className = `badge ${bc(idx.change)}`;
+    });
+
+    // Positions
+    const nifty = data.indices.NIFTY50.last;
+    let total = 0;
+    const rows = data.positions.map(p => {
+      total += p.pnl;
+      const diff = Math.abs(nifty - p.strike);
+      const daysLeft = Math.ceil((new Date(p.expiry) - new Date()) / 86400000);
+      let statusTag;
+      if (p.status === 'DEEP_OTM' && daysLeft <= 7)
+        statusTag = '<span class="tag tag-deep">⚠️ Deep OTM</span>';
+      else if (diff < 50)
+        statusTag = '<span class="tag tag-atm">🔥 Near ATM</span>';
+      else if ((p.type==='CE' && nifty > p.strike) || (p.type==='PE' && nifty < p.strike))
+        statusTag = '<span class="tag tag-ok">🎯 ITM</span>';
+      else
+        statusTag = '<span class="tag" style="background:#21262d;color:#8b949e">OTM</span>';
+
+      const typeTag = p.type === 'CE'
+        ? '<span class="tag tag-ce">CALL</span>'
+        : '<span class="tag tag-pe">PUT</span>';
+
+      return `<tr class="data-row">
+        <td><strong>${p.symbol}</strong></td>
+        <td>${typeTag}</td><td>${p.qty}</td>
+        <td>₹${fmt(p.avgPrice)}</td>
+        <td>₹${fmt(p.ltp)}</td>
+        <td class="${cc(p.pnl)}" style="font-weight:700">${sign(p.pnl)}₹${fmt(Math.abs(p.pnl),0)}</td>
+        <td>${statusTag}</td>
+      </tr>`;
+    }).join('');
+
+    const totalEmoji = total >= 0 ? '🟢' : '🔴';
+    document.getElementById('positionsBody').innerHTML = rows + `
+      <tr class="total-row">
+        <td colspan="5"><strong>Total P&L</strong></td>
+        <td colspan="2" class="${cc(total)}">${totalEmoji} ${sign(total)}₹${fmt(Math.abs(total),0)}</td>
+      </tr>`;
+
+    // Market read
+    document.getElementById('marketRead').innerHTML =
+      data.marketRead.replace(/(\d{2,3},\d{3}|\d{5})/g, '<strong>$1</strong>');
+
+    // Alerts
+    const icons = {warn:'⚠️', info:'🔵', success:'✅', danger:'🚨'};
+    document.getElementById('alertsBox').innerHTML = data.alerts.map(a =>
+      `<div class="alert alert-${a.type}"><span class="alert-icon">${icons[a.type]||'•'}</span><span>${a.msg}</span></div>`
+    ).join('') || '<p style="color:#8b949e;font-size:13px">No alerts</p>';
+
+    // Stocks
+    document.getElementById('stocksGrid').innerHTML = Object.entries(data.stocks).map(([sym,s]) => {
+      const cls = cc(s.last - s.open);
+      return `<div class="stock-pill">
+        <div class="stock-name">${sym}</div>
+        <div class="stock-price ${cls}">₹${fmt(s.last)}</div>
+        <div class="stock-range">L:₹${fmt(s.low)} · H:₹${fmt(s.high)}</div>
+      </div>`;
+    }).join('');
+
+    // Timestamp
+    const d = new Date(data.fetchedAt);
+    document.getElementById('updateTime').textContent =
+      d.toLocaleString('en-IN', {timeZone:'Asia/Kolkata', hour:'2-digit', minute:'2-digit', second:'2-digit', day:'2-digit', month:'short'}) + ' IST';
+  }
+
+  function refresh() {
+    const btn = document.getElementById('refreshBtn');
+    btn.classList.add('spinning');
+    btn.disabled = true;
+
+    // Re-read the embedded data block from the page itself
+    try {
+      const scriptEl = document.getElementById('market-data-block');
+      // Execute the script content to get fresh MARKET_DATA if page was reloaded
+      const data = window.MARKET_DATA;
+      if (!data) throw new Error('No data');
+      renderAll(data);
+      startCountdown();
+      toast('✅ Dashboard refreshed!', 'success');
+    } catch(e) {
+      toast('⚠️ No data available — ask Claude to run market-monitor', 'error');
+    } finally {
+      setTimeout(() => { btn.classList.remove('spinning'); btn.disabled = false; }, 600);
+    }
+  }
+
+  // Init on load
+  window.addEventListener('load', () => {
+    if (window.MARKET_DATA) {
+      renderAll(window.MARKET_DATA);
+      startCountdown();
+    }
+  });
+</script>
+</body>
+</html>

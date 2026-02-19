@@ -1,0 +1,47 @@
+{
+  "timestamp": "2026-02-10T23:22:52.487539",
+  "is_live": true,
+  "source": "KITE_CONNECT_DIRECT",
+  "account": {
+    "user_name": "Ajay Donatus Prem",
+    "user_id": "VWQ574",
+    "broker": "Zerodha (Direct)",
+    "status": "connected"
+  },
+  "margins": {
+    "net": 1495.2360640000006,
+    "available": 0,
+    "used": 42070.5
+  },
+  "positions": [
+    {
+      "symbol": "NIFTY26FEB25950CE",
+      "quantity": 65,
+      "entry_price": 238.2,
+      "current_price": 209.3,
+      "pnl": -1878.5,
+      "pnl_percent": -12.132661628883282,
+      "type": "LONG",
+      "product": "NRML",
+      "exchange": "NFO",
+      "instrument_type": null
+    },
+    {
+      "symbol": "VEDL26FEB685CE",
+      "quantity": 1150,
+      "entry_price": 24,
+      "current_price": 24.3,
+      "pnl": 345,
+      "pnl_percent": 1.250000000000003,
+      "type": "LONG",
+      "product": "NRML",
+      "exchange": "NFO",
+      "instrument_type": null
+    }
+  ],
+  "session_pnl": -1533.5,
+  "total_realized": 0,
+  "total_unrealized": -1533.5,
+  "nifty_ltp": 0,
+  "holdings": []
+}

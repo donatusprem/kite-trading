@@ -5,3 +5,5 @@
 {"timestamp": "2026-02-10T16:13:13.694157", "type": "scan", "opportunities_found": 19, "top_scores": [60, 60, 60, 60, 60], "top_symbols": ["TCS", "INFY", "BHARTIARTL", "HDFCBANK", "ICICIBANK"]}
 {"timestamp": "2026-02-10T16:13:50.231939", "type": "scan", "opportunities_found": 19, "top_scores": [60, 60, 60, 60, 60], "top_symbols": ["TCS", "INFY", "BHARTIARTL", "HDFCBANK", "ICICIBANK"]}
 {"timestamp": "2026-02-10T16:14:25.788591", "type": "scan", "opportunities_found": 19, "top_scores": [60, 60, 60, 60, 60], "top_symbols": ["TCS", "INFY", "BHARTIARTL", "HDFCBANK", "ICICIBANK"]}
+{"timestamp": "2026-02-10T21:59:44.965547", "type": "scan", "opportunities_found": 14, "top_scores": [70, 70, 70, 70, 70], "top_symbols": ["TCS", "HDFCBANK", "INFY", "BHARTIARTL", "LT"]}
+{"timestamp": "2026-02-10T23:40:35.024582", "type": "scan", "opportunities_found": 14, "top_scores": [70, 70, 70, 70, 70], "top_symbols": ["TCS", "HDFCBANK", "INFY", "BHARTIARTL", "LT"]}

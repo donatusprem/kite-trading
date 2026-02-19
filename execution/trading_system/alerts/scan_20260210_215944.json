@@ -1,0 +1,242 @@
+[
+  {
+    "symbol": "TCS",
+    "timestamp": "2026-02-10 21:59:44",
+    "score": 70,
+    "ltp": 2984.6,
+    "signals": [
+      "Downtrend",
+      "Bearish FVG Present"
+    ],
+    "pattern": "Downtrend",
+    "trend": "Downtrend",
+    "stopLoss": 2907.64,
+    "target1": 3042.69,
+    "target2": 3134.12,
+    "setup_type": "SKIP",
+    "entry_strategy": "No high-quality setup"
+  },
+  {
+    "symbol": "HDFCBANK",
+    "timestamp": "2026-02-10 21:59:44",
+    "score": 70,
+    "ltp": 932.4,
+    "signals": [
+      "Downtrend",
+      "Bearish FVG Present"
+    ],
+    "pattern": "Downtrend",
+    "trend": "Downtrend",
+    "stopLoss": 904.43,
+    "target1": 979.65,
+    "target2": 1014.8,
+    "setup_type": "SKIP",
+    "entry_strategy": "No high-quality setup"
+  },
+  {
+    "symbol": "INFY",
+    "timestamp": "2026-02-10 21:59:44",
+    "score": 70,
+    "ltp": 1497.8,
+    "signals": [
+      "Downtrend",
+      "Bearish FVG Present"
+    ],
+    "pattern": "Downtrend",
+    "trend": "Downtrend",
+    "stopLoss": 1449.1,
+    "target1": 1527.12,
+    "target2": 1631.8,
+    "setup_type": "SKIP",
+    "entry_strategy": "No high-quality setup"
+  },
+  {
+    "symbol": "BHARTIARTL",
+    "timestamp": "2026-02-10 21:59:44",
+    "score": 70,
+    "ltp": 2011.3,
+    "signals": [
+      "Downtrend",
+      "Bearish FVG Present"
+    ],
+    "pattern": "Downtrend",
+    "trend": "Downtrend",
+    "stopLoss": 1992.2,
+    "target1": 2169.25,
+    "target2": 2111.87,
+    "setup_type": "SKIP",
+    "entry_strategy": "No high-quality setup"
+  },
+  {
+    "symbol": "LT",
+    "timestamp": "2026-02-10 21:59:44",
+    "score": 70,
+    "ltp": 4169.0,
+    "signals": [
+      "Uptrend",
+      "Bullish FVG Present"
+    ],
+    "pattern": "Uptrend",
+    "trend": "Uptrend",
+    "stopLoss": 3949.1,
+    "target1": 4294.07,
+    "target2": 4377.45,
+    "setup_type": "SKIP",
+    "entry_strategy": "No high-quality setup"
+  },
+  {
+    "symbol": "ICICIBANK",
+    "timestamp": "2026-02-10 21:59:44",
+    "score": 65,
+    "ltp": 1406.5,
+    "signals": [
+      "Uptrend",
+      "Bullish FVG Present"
+    ],
+    "pattern": "Uptrend",
+    "trend": "Uptrend",
+    "stopLoss": 1332.0,
+    "target1": 1438.9,
+    "target2": 1476.83,
+    "setup_type": "SKIP",
+    "entry_strategy": "No high-quality setup"
+  },
+  {
+    "symbol": "BAJFINANCE",
+    "timestamp": "2026-02-10 21:59:44",
+    "score": 65,
+    "ltp": 965.6,
+    "signals": [
+      "Downtrend",
+      "Bearish FVG Present"
+    ],
+    "pattern": "Downtrend",
+    "trend": "Downtrend",
+    "stopLoss": 936.63,
+    "target1": 1036.7,
+    "target2": 1061.0,
+    "setup_type": "SKIP",
+    "entry_strategy": "No high-quality setup"
+  },
+  {
+    "symbol": "ADANIPORTS",
+    "timestamp": "2026-02-10 21:59:44",
+    "score": 65,
+    "ltp": 1554.7,
+    "signals": [
+      "Uptrend",
+      "Bullish FVG Present"
+    ],
+    "pattern": "Uptrend",
+    "trend": "Uptrend",
+    "stopLoss": 1460.9,
+    "target1": 1601.34,
+    "target2": 1632.43,
+    "setup_type": "SKIP",
+    "entry_strategy": "No high-quality setup"
+  },
+  {
+    "symbol": "POWERGRID",
+    "timestamp": "2026-02-10 21:59:44",
+    "score": 65,
+    "ltp": 294.35,
+    "signals": [
+      "Uptrend",
+      "High Volume",
+      "Bullish FVG Present"
+    ],
+    "pattern": "Uptrend",
+    "trend": "Uptrend",
+    "stopLoss": 271.34,
+    "target1": 303.18,
+    "target2": 309.07,
+    "setup_type": "SKIP",
+    "entry_strategy": "No high-quality setup"
+  },
+  {
+    "symbol": "RELIANCE",
+    "timestamp": "2026-02-10 21:59:44",
+    "score": 50,
+    "ltp": 1458.5,
+    "signals": [
+      "Downtrend",
+      "Bearish FVG Present"
+    ],
+    "pattern": "Downtrend",
+    "trend": "Downtrend",
+    "stopLoss": 1356.9,
+    "target1": 1596.55,
+    "target2": 1531.42,
+    "setup_type": "SKIP",
+    "entry_strategy": "No high-quality setup"
+  },
+  {
+    "symbol": "SBIN",
+    "timestamp": "2026-02-10 21:59:44",
+    "score": 45,
+    "ltp": 1144.1,
+    "signals": [
+      "Uptrend",
+      "High Volume",
+      "Bullish FVG Present"
+    ],
+    "pattern": "Uptrend",
+    "trend": "Uptrend",
+    "stopLoss": 944.45,
+    "target1": 1178.42,
+    "target2": 1201.3,
+    "setup_type": "SKIP",
+    "entry_strategy": "No high-quality setup"
+  },
+  {
+    "symbol": "KOTAKBANK",
+    "timestamp": "2026-02-10 21:59:44",
+    "score": 40,
+    "ltp": 429.3,
+    "signals": [
+      "Downtrend",
+      "Bullish FVG Present"
+    ],
+    "pattern": "Downtrend",
+    "trend": "Downtrend",
+    "stopLoss": 411.84,
+    "target1": 446.6,
+    "target2": 450.76,
+    "setup_type": "SKIP",
+    "entry_strategy": "No high-quality setup"
+  },
+  {
+    "symbol": "AXISBANK",
+    "timestamp": "2026-02-10 21:59:44",
+    "score": 40,
+    "ltp": 1356.7,
+    "signals": [
+      "Uptrend",
+      "Bullish FVG Present"
+    ],
+    "pattern": "Uptrend",
+    "trend": "Uptrend",
+    "stopLoss": 1213.15,
+    "target1": 1397.4,
+    "target2": 1424.53,
+    "setup_type": "SKIP",
+    "entry_strategy": "No high-quality setup"
+  },
+  {
+    "symbol": "ITC",
+    "timestamp": "2026-02-10 21:59:44",
+    "score": 30,
+    "ltp": 321.4,
+    "signals": [
+      "Downtrend",
+      "Bearish FVG Present"
+    ],
+    "pattern": "Downtrend",
+    "trend": "Downtrend",
+    "stopLoss": 311.76,
+    "target1": 401.09,
+    "target2": 417.65,
+    "setup_type": "SKIP",
+    "entry_strategy": "No high-quality setup"
+  }
+]

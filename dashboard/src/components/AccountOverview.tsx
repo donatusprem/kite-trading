@@ -6,7 +6,7 @@ import { useAccountData } from "@/hooks/useSystemData";
 import { formatINR, formatPercent, backtestResults } from "@/lib/kiteData";
 
 export function AccountOverview() {
-  const { margins, holdings, summary } = useAccountData();
+  const { account, margins, holdings, summary } = useAccountData();
 
   const netMargin = margins?.net ?? 0;
   const cashBalance = margins?.cash ?? 0;
@@ -68,17 +68,37 @@ export function AccountOverview() {
           </div>
         </div>
 
-        {/* Total Portfolio */}
+        {/* Lifetime P&L (New) */}
         <div className="rounded-xl border border-glass-border bg-glass p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-400">Total Portfolio</p>
+              <p className="text-sm font-medium text-gray-400">Lifetime P&L</p>
+              <div className="mt-2">
+                <span className={cn("text-2xl font-bold", (account?.lifetime_pnl ?? 0) >= 0 ? "text-success" : "text-accent")}>
+                  {(account?.lifetime_pnl ?? 0) >= 0 ? "+" : ""}{formatINR(account?.lifetime_pnl ?? 0)}
+                </span>
+                <p className={cn("text-xs font-medium mt-1", (account?.lifetime_pnl_pct ?? 0) >= 0 ? "text-success" : "text-accent")}>
+                  {formatPercent(account?.lifetime_pnl_pct ?? 0)} Return
+                </p>
+              </div>
+            </div>
+            <div className="rounded-lg bg-white/5 p-2 text-primary">
+              <TrendingUp className="h-5 w-5" />
+            </div>
+          </div>
+        </div>
+
+        {/* Net Worth / Funds Added */}
+        <div className="rounded-xl border border-glass-border bg-glass p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-400">Net Worth</p>
               <div className="mt-2">
                 <span className="text-2xl font-bold text-white">
-                  {formatINR(totalPortfolio)}
+                  {formatINR(account?.current_value ?? 0)}
                 </span>
                 <p className="text-xs text-gray-500 mt-1">
-                  {activePositions.length} active | {closedPositions.length} closed today
+                  Funds Added: {formatINR(account?.funds_added ?? 0)}
                 </p>
               </div>
             </div>

@@ -1,343 +1,236 @@
-
 import os
 import sys
-import time
 import json
-import subprocess
-import urllib.request
-import urllib.error
-import webbrowser
+import time
+import pandas as pd
+from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from kiteconnect import KiteConnect
 
-# Configuration
-MCP_PORT = 8080
-MCP_URL = f"http://localhost:{MCP_PORT}/mcp"
-HEALTH_URL = f"http://localhost:{MCP_PORT}/"
-
-# Locate strict paths (Adjust as necessary based on where this file is located)
+# Paths
 SCRIPT_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = SCRIPT_DIR.parent
-ENV_FILE = PROJECT_ROOT / ".env"
-MCP_SERVER_DIR = SCRIPT_DIR / "kite-mcp-server"
-MCP_SERVER_BIN = MCP_SERVER_DIR / "kite-mcp-server"
+PROJECT_ROOT = SCRIPT_DIR
+TOKEN_FILE = SCRIPT_DIR / "kite_token.json"
+DATA_DIR = PROJECT_ROOT / ".tmp"
+INSTRUMENTS_FILE = DATA_DIR / "instruments_nfo.csv"
 
 class KiteMCPClient:
     """
-    A client wrapper for the Kite MCP Server.
-    Handles process management, authentication, and JSON-RPC calls.
+    Direct Kite Connect Client wrapper that mimics the old MCP Client interface.
+    Used by dashboard_api.py, options_analyzer.py, etc.
     """
 
     def __init__(self):
-        self.session_id: Optional[str] = None
-        self.process: Optional[subprocess.Popen] = None
+        self.kite = None
+        self.instruments_df = None
+        self._load_token()
 
-    def load_env(self) -> bool:
-        """Load .env file manually to avoid dependencies"""
-        # Check if vars already exist
-        if os.environ.get("KITE_API_KEY") and os.environ.get("KITE_API_SECRET"):
-            print("✅ Credentials found in environment variables.")
-            return True
-
-        print(f"Loading .env from {ENV_FILE}")
+    def _load_token(self):
         try:
-            if not ENV_FILE.exists():
-                print(f"⚠️ .env file not found at {ENV_FILE}")
-                return False
-                
-            with open(ENV_FILE, "r") as f:
-                for line in f:
-                    line = line.strip()
-                    if not line or line.startswith("#"):
-                        continue
-                    if "=" in line:
-                        key, value = line.split("=", 1)
-                        os.environ[key.strip()] = value.strip()
-            return True
-        except PermissionError:
-            print(f"⚠️ Permission denied reading {ENV_FILE}.")
-            return False
+            if not TOKEN_FILE.exists():
+                print(f"❌ Token file missing: {TOKEN_FILE}")
+                return
+
+            with open(TOKEN_FILE, "r") as f:
+                data = json.load(f)
+            
+            self.kite = KiteConnect(api_key=data.get("api_key"))
+            self.kite.set_access_token(data.get("access_token"))
+            print("✅ Kite Direct Client Initialized")
         except Exception as e:
-            print(f"⚠️ Error reading .env: {e}")
-            return False
+            print(f"❌ Failed to init Kite Client: {e}")
 
-    def check_server(self) -> bool:
-        """Check if server is running"""
-        try:
-            with urllib.request.urlopen(HEALTH_URL, timeout=1) as response:
-                return response.status == 200
-        except:
-            return False
-
-    def start_server(self) -> bool:
-        """Start the MCP server subprocess"""
-        print("Starting Kite MCP Server...")
+    def check_server(self):
+        # Always true for direct mode
+        return True
         
-        if not MCP_SERVER_BIN.exists():
-            print(f"❌ Binary not found at {MCP_SERVER_BIN}")
-            print("Please run 'go build -o kite-mcp-server' in that directory.")
-            return False
-
-        # Load env vars needed for the server
-        if not self.load_env():
-            return False
-
-        # Start process
-        try:
-            self.process = subprocess.Popen(
-                [str(MCP_SERVER_BIN)],
-                cwd=str(MCP_SERVER_DIR),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
-            
-            # Wait for it to come up
-            print("Waiting for server to start...")
-            for i in range(30):
-                if self.check_server():
-                    print("✅ Server started!")
-                    return True
-                time.sleep(1)
-            
-            print("❌ Server failed to start (timeout).")
-            self.stop_server()
-            return False
-            
-        except Exception as e:
-            print(f"❌ Failed to launch process: {e}")
-            return False
-
-    def stop_server(self):
-        """Terminate the server process if we started it"""
-        if self.process:
-            self.process.terminate()
-            self.process = None
-
-    def _call(self, method: str, params: Dict[str, Any] = None) -> Any:
-        """Make a raw JSON-RPC call to MCP server"""
-        if params is None:
-            params = {}
-            
-        payload = {
-            "jsonrpc": "2.0",
-            "id": int(time.time() * 1000),
-            "method": method,
-            "params": params
-        }
-        
-        req = urllib.request.Request(
-            MCP_URL,
-            data=json.dumps(payload).encode('utf-8'),
-            headers={"Content-Type": "application/json"}
-        )
-        
-        if self.session_id:
-            req.add_header("Mcp-Session-Id", self.session_id)
-            
-        try:
-            with urllib.request.urlopen(req) as response:
-                result_json = json.loads(response.read().decode('utf-8'))
-                
-                # Update session ID if changed
-                new_session = response.getheader("Mcp-Session-Id")
-                if new_session:
-                    self.session_id = new_session
-
-                if "error" in result_json:
-                    raise Exception(f"MCP Error: {result_json['error']}")
-                
-                return result_json.get("result")
-                
-        except urllib.error.HTTPError as e:
-            raise Exception(f"HTTP Error {e.code}: {e.read().decode('utf-8')}")
-            
-    def call_tool(self, tool_name: str, arguments: Dict[str, Any] = None) -> Any:
-        """Helper to call an MCP tool"""
-        if arguments is None:
-            arguments = {}
-            
-        response = self._call("tools/call", {
-            "name": tool_name,
-            "arguments": arguments
-        })
-        
-        # Tools typically return a content list. We want to parse the JSON inside.
-        # But wait, looking at the MCP spec and Go implementation:
-        # The Go implementation returns `handler.MarshalResponse(data)` which typically
-        # structures it as content: [{type: text, text: JSON_STRING}]
-        
-        try:
-            content = response.get("content", [])
-            if not content:
-                return None
-                
-            text = content[0].get("text", "")
-            # The Kite MCP server returns the data directly as JSON string in text
-            return json.loads(text)
-        except json.JSONDecodeError:
-            return text # Return raw text if not JSON
-        except Exception as e:
-            print(f"Error parsing tool response: {e}")
-            return response
-
-    def initialize(self) -> bool:
-        """Perform MCP handshake"""
-        print("[MCP] Initializing Session...")
-        try:
-            res = self._call("initialize", {
-                "protocolVersion": "2024-11-05",
-                "capabilities": {},
-                "clientInfo": {"name": "kite-python-client", "version": "1.0"}
-            })
-            # The session ID is usually set in headers during this call
-            if self.session_id:
-                print(f"✅ Session Initialized (ID: {self.session_id})")
-                return True
-            else:
-                print("❌ Failed to get Session ID.")
-                return False
-        except Exception as e:
-            print(f"❌ Initialize failed: {e}")
-            return False
-
-    def login(self) -> bool:
-        """
-        Request login URL, open browser, and wait for user.
-        """
-        if not self.session_id:
-            if not self.initialize():
-                return False
-
-        print("\n[MCP] Requesting Login URL...")
-        try:
-            # We use _call instead of call_tool here because 'login' returns 
-            # a text message with the URL, not a JSON data object.
-            response = self._call("tools/call", {
-                "name": "login",
-                "arguments": {}
-            })
-            
-            content = response.get("content", [{}])[0].get("text", "")
-            
-            import re
-            url_match = re.search(r'\((https://kite\.zerodha\.com/[^)]+)\)', content)
-            
-            if url_match:
-                login_url = url_match.group(1)
-                print(f"✅ Login URL received")
-                print(f"\nURL: {login_url}\n")
-                
-                print("Opening Browser...")
-                webbrowser.open(login_url)
-                
-                input("\n👉 Press Enter after you have authenticated in the browser... ")
-                
-                # Verify
-                print("\nVerifying session...")
-                profile = self.get_profile()
-                if profile:
-                     print(f"✅ Authenticated as {profile.get('user_name')} ({profile.get('user_id')})")
-                     return True
-                else:
-                     print("❌ Verification failed.")
-                     return False
-            else:
-                print("❌ Could not parse URL from response.")
-                print(content)
-                return False
-                
-        except Exception as e:
-             print(f"❌ Login flow error: {e}")
-             return False
-
-    # --- Market Data Tools ---
+    def login(self):
+        # Always true if token exists
+        return self.kite is not None
 
     def get_profile(self):
-        return self.call_tool("get_profile")
+        try:
+            return self.kite.profile()
+        except Exception as e:
+            print(f"Error fetching profile: {e}")
+            return None
 
     def get_margins(self):
-        return self.call_tool("get_margins")
+        try:
+            return self.kite.margins()
+        except Exception as e:
+            print(f"Error fetching margins: {e}")
+            return None
 
-    def get_holdings(self):
-        return self.call_tool("get_holdings")
-        
     def get_positions(self):
-        return self.call_tool("get_positions")
+        try:
+            return self.kite.positions()
+        except Exception as e:
+            print(f"Error fetching positions: {e}")
+            return None
 
     def get_orders(self):
-        return self.call_tool("get_orders")
+        try:
+            return self.kite.orders()
+        except Exception as e:
+            print(f"Error fetching orders: {e}")
+            return None
 
+    def get_ltp(self, instruments: list):
+        """
+        Get LTP for list of instruments (e.g., ["NSE:INFY", "NFO:NIFTY23..."]).
+        Returns dict keyed by instrument.
+        """
+        try:
+            return self.kite.ltp(instruments)
+        except Exception as e:
+            print(f"Error fetching LTP: {e}")
+            return {}
+
+    def get_quotes(self, instruments: list):
+        try:
+            return self.kite.quote(instruments)
+        except Exception as e:
+            print(f"Error fetching quotes: {e}")
+            return {}
+
+    def get_ohlc(self, instruments: list):
+        try:
+            return self.kite.ohlc(instruments)
+        except Exception as e:
+            print(f"Error fetching OHLC: {e}")
+            return {}
+
+    def get_historical_data(self, instrument_token, from_date, to_date, interval, continuous=False, oi=False):
+        try:
+            return self.kite.historical_data(instrument_token, from_date, to_date, interval, continuous, oi)
+        except Exception as e:
+            print(f"Error fetching historical: {e}")
+            return []
+
+    # ─── Search Instruments (Crucial for Option Chain) ───
+
+    def _ensure_instruments_loaded(self):
+        if self.instruments_df is not None:
+            return
+
+        DATA_DIR.mkdir(exist_ok=True)
+        
+        # Check cache age (1 day)
+        fetch_fresh = True
+        if INSTRUMENTS_FILE.exists():
+            mtime = datetime.fromtimestamp(INSTRUMENTS_FILE.stat().st_mtime)
+            if mtime.date() == datetime.now().date():
+                fetch_fresh = False
+                print("Using cached instruments dump.")
+
+        if fetch_fresh:
+            print("Fetching fresh instruments dump (NFO)...")
+            try:
+                # specific exchange NFO to reduce size? Or all?
+                # options_analyzer needs NFO.
+                inst_list = self.kite.instruments("NFO")
+                df = pd.DataFrame(inst_list)
+                # Convert dates to string for CSV/Compat
+                if 'expiry' in df.columns:
+                    df['expiry'] = df['expiry'].astype(str)
+                df.to_csv(INSTRUMENTS_FILE, index=False)
+                self.instruments_df = df
+            except Exception as e:
+                print(f"Failed to fetch instruments: {e}")
+                # Try loading cache even if old
+                if INSTRUMENTS_FILE.exists():
+                     self.instruments_df = pd.read_csv(INSTRUMENTS_FILE)
+        else:
+            self.instruments_df = pd.read_csv(INSTRUMENTS_FILE)
+            
+        # Also need NSE for Index Spot prices?
+        # Analyzer maps UNDERLYING to 'NSE:NIFTY 50'.
+        # This function search_instruments is usually called with "NFO:..." query.
+        
     def search_instruments(self, query: str, filter_on: str = "id", limit: int = 10):
-        return self.call_tool("search_instruments", {
-            "query": query,
-            "filter_on": filter_on,
-            "limit": limit
-        })
-
-    def get_quotes(self, instruments: List[str]):
         """
-        Get API quotes.
-        instruments list eg: ["NSE:INFY", "BSE:SENSEX"]
+        Mimics MCP search_instruments.
+        Query: "NFO:NIFTY"
+        Filter: "underlying" (usually)
         """
-        return self.call_tool("get_quotes", {
-            "instruments": instruments
-        })
+        self._ensure_instruments_loaded()
+        if self.instruments_df is None:
+            return []
 
-    def get_ltp(self, instruments: List[str]):
-        return self.call_tool("get_ltp", {
-            "instruments": instruments
-        })
-
-    def get_ohlc(self, instruments: List[str]):
-        return self.call_tool("get_ohlc", {
-            "instruments": instruments
-        })
-
-    def get_historical_data(self, instrument_token: int, from_date: str, to_date: str, interval: str, continuous: bool = False, oi: bool = False):
-        """
-        from_date/to_date format: YYYY-MM-DD HH:MM:SS
-        interval: minute, day, 3minute, 5minute, etc.
-        """
-        return self.call_tool("get_historical_data", {
-            "instrument_token": instrument_token,
-            "from_date": from_date,
-            "to_date": to_date,
-            "interval": interval,
-            "continuous": continuous,
-            "oi": oi
-        })
-
-    # --- Order Tools ---
-
-    def place_order(self, 
-                    tradingsymbol: str, 
-                    transaction_type: str, 
-                    quantity: int, 
-                    product: str, 
-                    order_type: str, 
-                    exchange: str = "NSE", 
-                    price: float = 0.0, 
-                    trigger_price: float = 0.0, 
-                    variety: str = "regular",
-                    validity: str = "DAY",
-                    disclosed_quantity: int = 0,
-                    tag: str = ""):
+        df = self.instruments_df
         
-        args = {
-            "variety": variety,
-            "exchange": exchange,
-            "tradingsymbol": tradingsymbol,
-            "transaction_type": transaction_type,
-            "quantity": quantity,
-            "product": product,
-            "order_type": order_type,
-            "validity": validity
-        }
+        # Parse query "NFO:NIFTY"
+        exchange = None
+        search_txt = query
+        if ":" in query:
+            parts = query.split(":")
+            if parts[0] in ["NFO", "NSE", "BSE", "MCX"]:
+                exchange = parts[0]
+                search_txt = parts[1]
+
+        # Filter
+        # If caching only NFO, then ignore NSE exchange filter?
+        # The code above only fetches NFO.
+        # If query asks for NSE, we might return nothing.
+        # But OptionsAnalyzer asks for "NFO:NIFTY".
         
-        if price > 0: args["price"] = price
-        if trigger_price > 0: args["trigger_price"] = trigger_price
-        if disclosed_quantity > 0: args["disclosed_quantity"] = disclosed_quantity
-        if tag: args["tag"] = tag
+        mask = pd.Series([True] * len(df))
+        
+        if exchange:
+            mask &= (df["exchange"] == exchange)
+            
+        if filter_on == "underlying":
+            # Underlying name match: "NIFTY" -> matches "NIFTY", "NIFTY 50"??
+            # Kite 'name' field usually holds underlying symbol e.g. "NIFTY"
+            mask &= (df["name"] == search_txt)
+        elif filter_on == "name":
+            mask &= (df["name"].str.contains(search_txt, case=False, na=False))
+        elif filter_on == "tradingsymbol":
+            mask &= (df["tradingsymbol"].str.contains(search_txt, case=False, na=False))
 
-        return self.call_tool("place_order", args)
+        results_df = df[mask]
+        
+        # Convert to list of dicts
+        # Ensure 'expiry' is string YYYY-MM-DD
+        records = results_df.to_dict(orient="records")
+        # Handle nan
+        clean_records = []
+        for r in records:
+            # clean nan
+            r = {k: (v if pd.notna(v) else None) for k, v in r.items()}
+            # Convert expiry to string if it matches 'NaT' or similar
+            if 'expiry' in r and (r['expiry'] == 'nan' or r['expiry'] == 'NaT'):
+                r['expiry'] = ""
+            clean_records.append(r)
+            
+        return clean_records[:limit]
 
+    def place_order(self, tradingsymbol, transaction_type, quantity, product, order_type, 
+                    exchange="NSE", price=0.0, trigger_price=0.0, variety="regular", 
+                    validity="DAY", disclosed_quantity=0, tag=""):
+        
+        try:
+            order_id = self.kite.place_order(
+                variety=variety,
+                exchange=exchange,
+                tradingsymbol=tradingsymbol,
+                transaction_type=transaction_type,
+                quantity=quantity,
+                product=product,
+                order_type=order_type,
+                price=price,
+                trigger_price=trigger_price,
+                validity=validity,
+                disclosed_quantity=disclosed_quantity,
+                tag=tag
+            )
+            return {"status": "success", "order_id": order_id}
+        except Exception as e:
+            print(f"Order Placement Error: {e}")
+            return {"status": "error", "message": str(e)}
+
+    # Helper for mcp compatibility
+    def call_tool(self, name, args):
+        print(f"Mocking call_tool: {name}")
+        return None

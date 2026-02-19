@@ -11,8 +11,13 @@ import { RiskDashboardPanel } from "@/components/RiskDashboard";
 
 const QUICK_SYMBOLS = ["RELIANCE", "HDFCBANK", "TCS", "INFY", "SBIN", "ITC", "ICICIBANK", "ADANIPORTS"];
 
-export default function SignalsPage() {
-    const [symbol, setSymbol] = useState("");
+import { useSearchParams } from "next/navigation";
+import { useEffect, Suspense } from "react";
+
+// Wrap content in Suspense for useSearchParams
+function SignalsContent() {
+    const searchParams = useSearchParams();
+    const [symbol, setSymbol] = useState(searchParams.get("symbol") || "");
     const [activeSymbol, setActiveSymbol] = useState<string | null>(null);
     const { signal, recommendation, loading, error, analyzeSymbol, getRecommendation } = useSignalData();
     const { risk, modules } = useRiskData();
@@ -21,8 +26,20 @@ export default function SignalsPage() {
         const s = sym.toUpperCase().trim();
         if (!s) return;
         setActiveSymbol(s);
+        // Update URL without reload
+        const url = new URL(window.location.href);
+        url.searchParams.set("symbol", s);
+        window.history.pushState({}, "", url);
+
         await Promise.all([analyzeSymbol(s), getRecommendation(s)]);
     };
+
+    useEffect(() => {
+        const initialSymbol = searchParams.get("symbol");
+        if (initialSymbol) {
+            handleAnalyze(initialSymbol);
+        }
+    }, []);
 
     return (
         <div className="space-y-6">
@@ -117,3 +134,13 @@ export default function SignalsPage() {
         </div>
     );
 }
+
+export default function SignalsPage() {
+    return (
+        <Suspense fallback={<div className="p-6 text-gray-500">Loading Signal Engine...</div>}>
+            <SignalsContent />
+        </Suspense>
+    );
+}
+
+

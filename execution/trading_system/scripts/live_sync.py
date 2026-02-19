@@ -14,12 +14,15 @@ from datetime import datetime
 from pathlib import Path
 import logging
 
+print("DEBUG: STARTED LIVE SYNC", flush=True)
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[logging.StreamHandler(sys.stdout)]
 )
+
 logger = logging.getLogger("LiveSync")
 
 # Add execution directory to path so we can import kite_client
@@ -96,43 +99,64 @@ class KiteLiveProvider:
         total_realized = 0
         try:
             positions_raw = self.client.get_positions()
-            if positions_raw and isinstance(positions_raw, list):
-                for pos in positions_raw:
-                    qty = pos.get("quantity", 0) or pos.get("net_quantity", 0)
-                    if qty == 0:
-                        # Closed position, only has realized PnL
-                        total_realized += pos.get("pnl", 0) or pos.get("realised", 0)
-                        continue
+            logger.info(f"Raw positions from Kite: {json.dumps(positions_raw, default=str)}")
+            
+            # Kite returns {'net': [...], 'day': [...]} sometimes, or just a list
+            # We need to handle both cases
+            all_positions = []
+            if isinstance(positions_raw, dict):
+                if 'net' in positions_raw:
+                    all_positions.extend(positions_raw['net'])
+                if 'day' in positions_raw:
+                    # 'day' positions might be duplicates of 'net' if we just want current exposure?
+                    # Usually 'net' contains the actual net positions.
+                    pass 
+            elif isinstance(positions_raw, list):
+                all_positions = positions_raw
 
-                    entry = pos.get("average_price", 0)
-                    ltp = pos.get("last_price", 0)
-                    pnl = pos.get("pnl", 0) or pos.get("unrealised", 0)
-                    
-                    if entry > 0 and abs(qty) > 0:
-                        pnl_pct = ((ltp - entry) / entry) * 100 if entry > 0 else 0
-                        if qty < 0:
-                            pnl_pct = -pnl_pct
-                    else:
-                        pnl_pct = 0
+            logger.info(f"Processing {len(all_positions)} positions")
 
-                    total_unrealized += pnl
+            for pos in all_positions:
+                qty = pos.get("quantity", 0)
+                if qty == 0:
+                    qty = pos.get("net_quantity", 0)
+                
+                logger.info(f"Position: {pos.get('tradingsymbol')} | Qty: {qty} | Raw: {pos}")
 
-                    positions_data.append({
-                        "symbol": pos.get("tradingsymbol", "???"),
-                        "quantity": qty,
-                        "entry_price": round(entry, 2),
-                        "current_price": round(ltp, 2),
-                        "pnl": round(pnl, 2),
-                        "pnl_percent": round(pnl_pct, 2),
-                        "type": "LONG" if qty > 0 else "SHORT",
-                        "product": pos.get("product", ""),
-                        "exchange": pos.get("exchange", ""),
-                        "instrument_type": pos.get("instrument_type", "EQ"),
-                    })
-                    
-                session_pnl = total_realized + total_unrealized
+                if qty == 0:
+                    # Closed position, only has realized PnL
+                    total_realized += pos.get("pnl", 0) or pos.get("realised", 0)
+                    continue
+
+                entry = pos.get("average_price", 0)
+                ltp = pos.get("last_price", 0)
+                pnl = pos.get("pnl", 0) or pos.get("unrealised", 0)
+                
+                if entry > 0 and abs(qty) > 0:
+                    pnl_pct = ((ltp - entry) / entry) * 100 if entry > 0 else 0
+                    if qty < 0:
+                        pnl_pct = -pnl_pct
+                else:
+                    pnl_pct = 0
+
+                total_unrealized += pnl
+
+                positions_data.append({
+                    "symbol": pos.get("tradingsymbol", "???"),
+                    "quantity": qty,
+                    "entry_price": round(entry, 2),
+                    "current_price": round(ltp, 2),
+                    "pnl": round(pnl, 2),
+                    "pnl_percent": round(pnl_pct, 2),
+                    "type": "LONG" if qty > 0 else "SHORT",
+                    "product": pos.get("product", ""),
+                    "exchange": pos.get("exchange", ""),
+                    "instrument_type": pos.get("instrument_type", "EQ"),
+                })
+                
+            session_pnl = total_realized + total_unrealized
         except Exception as e:
-            logger.warning(f"Positions fetch error: {e}")
+            logger.error(f"Positions fetch error: {e}", exc_info=True)
 
         # --- Holdings (fetch less frequently, every 60s) ---
         now = time.time()
