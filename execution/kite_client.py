@@ -76,6 +76,13 @@ class KiteMCPClient:
             print(f"Error fetching orders: {e}")
             return None
 
+    def get_holdings(self):
+        try:
+            return self.kite.holdings()
+        except Exception as e:
+            print(f"Error fetching holdings: {e}")
+            return []
+
     def get_ltp(self, instruments: list):
         """
         Get LTP for list of instruments (e.g., ["NSE:INFY", "NFO:NIFTY23..."]).
