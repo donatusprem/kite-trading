@@ -1,0 +1,109 @@
+Starting diagnostics (retry)...
+Current Working Directory: /home/user/kite-trading
+Listing contents of current dir (/home/user/kite-trading):
+ - US_vs_India_Options_Comparison.xlsx
+ - Profit_Scenarios_Feb11.xlsx
+ - Position_Analysis_Feb17_EOD.md
+ - run_tests.sh
+ - Trading_Edge_Playbook.docx
+ - .~lock.Ajay_Trading_Tracker.xlsx#
+ - Skill_Creation_Guide.md
+ - AUTOMATED_TRACKING_GUIDE.md
+ - Market_Scan_Feb17_0922.md
+ - Hedging_Strategies_Feb18_0944.md
+ - Hybrid_Strategy_Report.xlsx
+ - market-monitor-dashboard.html
+ - Trading_Plan_Feb16_2026.md
+ - tradebook-VWQ574-EQ.csv
+ - .git
+ - Market_Sentiment_News_Feb16.md
+ - Pre_Trade_Conviction_Checklist.py
+ - Technical_Analysis_Feb16_2026.md
+ - daily_summary.txt
+ - trading_analysis_and_framework.md
+ - diagnostic_log.txt
+ - .~lock.US_vs_India_Options_Comparison.xlsx#
+ - .gitignore
+ - archive
+ - Strategy_Comparison_Report.xlsx
+ - debug_test.py
+ - market-data.json
+ - New_Opportunities_Feb17_0945.md
+ - tradebook-VWQ574-FO (1).csv
+ - directives
+ - check_nifty_strategy.py
+ - Nifty_Backtest_Simulator.py
+ - nifty_conviction_engine
+ - Spread_Ladder_WhatIf_Analysis.txt
+ - trading_log.csv
+ - kelly_system
+ - Trading_Sweet_Spot.html
+ - .~lock.Hybrid_Strategy_Report.xlsx#
+ - ledger-VWQ574.csv
+ - execution
+ - Nifty_Strategy_Engine.py
+ - Trading_Acronyms_Guide.md
+ - AGENTS.md
+ - Market_Scan_Feb18_0910.md
+ - dashboard
+ - Market_Behavior_Analysis_Feb17.md
+ - run_diagnostics.py
+ - .env.example
+ - Live_Edge_Finder.py
+ - Ajay_Trading_Tracker.xlsx
+ - Market_Analysis_Feb18_0915_Truth.md
+ - Risk_Management_Dashboard.xlsx
+ - Nifty_Options_Backtest_Report.xlsx
+Nifty_Backtest_Simulator.py found!
+Import successful! Running Test Scenarios...
+Scenario generation works.
+--- SIMULATION OUTPUT START ---
+
+--- Running Backtest: Strong Bull Market ---
+[255m] ENTRY BULL @ 24529.24 | Score: 45
+[280m] TARGET HIT (+30) @ 24560.52
+[281m] ENTRY BULL @ 24561.10 | Score: 45
+[335m] TARGET HIT (+30) @ 24592.53
+[336m] ENTRY BULL @ 24593.81 | Score: 45
+[361m] TARGET HIT (+30) @ 24624.64
+[362m] ENTRY BULL @ 24623.42 | Score: 50
+
+RESULTS for Strong Bull Market:
+Total Trades: 3
+Win Rate: 100.0%
+Total P&L Points: 90
+-------------------------------
+
+--- Running Backtest: Panic Crash ---
+[0m] STOP HIT (-15) @ 24502.12
+[91m] ENTRY BEAR @ 24398.55 | Score: 40
+[181m] TARGET HIT (+30) @ 24367.40
+[182m] ENTRY BEAR @ 24371.69 | Score: 50
+[208m] TARGET HIT (+30) @ 24341.46
+[209m] ENTRY BEAR @ 24340.07 | Score: 50
+[249m] TARGET HIT (+30) @ 24307.34
+[250m] ENTRY BEAR @ 24310.78 | Score: 50
+[260m] STOP HIT (-15) @ 24326.11
+[270m] ENTRY BULL @ 24325.06 | Score: 50
+[276m] STOP HIT (-15) @ 24309.74
+[283m] ENTRY BULL @ 24321.65 | Score: 50
+[296m] STOP HIT (-15) @ 24306.63
+[297m] ENTRY BEAR @ 24309.50 | Score: 50
+[333m] TARGET HIT (+30) @ 24276.84
+[334m] ENTRY BEAR @ 24274.35 | Score: 50
+
+RESULTS for Panic Crash:
+Total Trades: 8
+Win Rate: 50.0%
+Total P&L Points: 60
+-------------------------------
+
+--- Running Backtest: Sideways/Choppy ---
+[0m] STOP HIT (-15) @ 24495.89
+
+RESULTS for Sideways/Choppy:
+Total Trades: 1
+Win Rate: 0.0%
+Total P&L Points: -15
+-------------------------------
+--- SIMULATION OUTPUT END ---
