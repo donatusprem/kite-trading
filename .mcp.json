@@ -1,8 +1,14 @@
 {
   "mcpServers": {
     "kite": {
-      "type": "http",
-      "url": "https://mcp.kite.trade/mcp"
+      "type": "stdio",
+      "command": "/home/user/kite-trading/execution/kite-mcp-server/kite-mcp-server",
+      "env": {
+        "APP_MODE": "stdio",
+        "KITE_API_KEY": "${KITE_API_KEY}",
+        "KITE_API_SECRET": "${KITE_API_SECRET}"
+      }
     }
   }
 }
+
